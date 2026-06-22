@@ -12,6 +12,7 @@
     <modules>
         <module>coverage-integration-core</module>
         <module>coverage-integration-junit4</module>
+        <module>coverage-integration-junit6</module>
     </modules>
 
     <properties>
