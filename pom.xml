@@ -12,6 +12,7 @@
     <modules>
         <module>coverage-integration-core</module>
         <module>coverage-integration-junit4</module>
+        <module>coverage-integration-junit5</module>
         <module>coverage-integration-junit6</module>
     </modules>
 
@@ -25,9 +26,17 @@
         <gsonfire.version>1.9.0</gsonfire.version>
         <jakarta.annotation.version>3.0.0</jakarta.annotation.version>
         <junit4.version>4.13.2</junit4.version>
+        <junit5.version>5.14.2</junit5.version>
     </properties>
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit5.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>com.squareup.okhttp3</groupId>
                 <artifactId>okhttp</artifactId>

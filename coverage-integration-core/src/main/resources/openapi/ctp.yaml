@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: REST API v3
-  description: Generated on 2026-06-16 11:14:09
+  description: Generated on 2026-06-23 11:33:47
   version: v3
 servers:
 - url: /em/api
@@ -4039,12 +4039,15 @@ components:
         test:
           title: Test
           type: string
+          nullable: true
         testCase:
           title: Test Case
           type: string
+          nullable: true
         session:
           title: Session ID
           type: string
+          nullable: true
       description: Information about the agent.
       xml:
         name: AgentStatusModelV3
