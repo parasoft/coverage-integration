@@ -11,6 +11,7 @@ import org.junit.platform.launcher.LauncherSession;
 import org.junit.platform.launcher.LauncherSessionListener;
 
 import com.parasoft.coverage.integration.core.CoverageApiClient;
+import com.parasoft.coverage.integration.core.CoverageApiClientFactory;
 
 public class ParasoftJUnit6SessionListener implements LauncherSessionListener
 {
@@ -18,7 +19,7 @@ public class ParasoftJUnit6SessionListener implements LauncherSessionListener
 
     public ParasoftJUnit6SessionListener()
     {
-        this(ParasoftJUnit6ClientFactory.createFromSystemProperties());
+        this(CoverageApiClientFactory.createFromSettings());
     }
 
     public ParasoftJUnit6SessionListener(CoverageApiClient coverageApiClient)

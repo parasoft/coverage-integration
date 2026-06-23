@@ -11,6 +11,7 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
 import com.parasoft.coverage.integration.core.CoverageApiClient;
+import com.parasoft.coverage.integration.core.CoverageApiClientFactory;
 import com.parasoft.coverage.integration.core.ParasoftCoverageApiClient;
 import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultEnum;
 
@@ -20,7 +21,7 @@ public class ParasoftJUnit4Watcher extends TestWatcher {
     private final ThreadLocal<TestExecution> currentTest = new ThreadLocal<>();
 
     public ParasoftJUnit4Watcher() {
-        this(ParasoftJUnit4ClientFactory.createFromSystemProperties());
+        this(CoverageApiClientFactory.createFromSettings());
     }
 
     public ParasoftJUnit4Watcher(String ctpBaseUrl, Long environmentId, String userId) {

@@ -12,6 +12,7 @@ import org.junit.runner.Result;
 import org.junit.runner.notification.RunListener;
 
 import com.parasoft.coverage.integration.core.CoverageApiClient;
+import com.parasoft.coverage.integration.core.CoverageApiClientFactory;
 
 public class ParasoftJUnit4RunListener
         extends RunListener
@@ -20,7 +21,7 @@ public class ParasoftJUnit4RunListener
     
     public ParasoftJUnit4RunListener()
     {
-        this(ParasoftJUnit4ClientFactory.createFromSystemProperties());
+        this(CoverageApiClientFactory.createFromSettings());
     }
 
     public ParasoftJUnit4RunListener(CoverageApiClient coverageApiClient)

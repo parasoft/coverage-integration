@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.jupiter.api.extension.TestWatcher;
 
 import com.parasoft.coverage.integration.core.CoverageApiClient;
+import com.parasoft.coverage.integration.core.CoverageApiClientFactory;
 import com.parasoft.coverage.integration.core.ParasoftCoverageApiClient;
 import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultEnum;
 
@@ -27,7 +28,7 @@ public class ParasoftJUnit6Extension implements BeforeEachCallback, TestWatcher
 
     public ParasoftJUnit6Extension()
     {
-        this(ParasoftJUnit6ClientFactory.createFromSystemProperties());
+        this(CoverageApiClientFactory.createFromSettings());
     }
 
     public ParasoftJUnit6Extension(String ctpBaseUrl, Long environmentId, String userId)

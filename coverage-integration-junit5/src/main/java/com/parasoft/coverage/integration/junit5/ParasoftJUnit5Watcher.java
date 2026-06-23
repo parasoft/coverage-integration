@@ -20,6 +20,7 @@ import org.junit.platform.launcher.TestIdentifier;
 import org.junit.platform.launcher.TestPlan;
 
 import com.parasoft.coverage.integration.core.CoverageApiClient;
+import com.parasoft.coverage.integration.core.CoverageApiClientFactory;
 import com.parasoft.coverage.integration.core.ParasoftCoverageApiClient;
 import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultEnum;
 
@@ -44,6 +45,7 @@ public class ParasoftJUnit5Watcher
 
     public ParasoftJUnit5Watcher()
     {
+        this(CoverageApiClientFactory.createFromSettings());
     }
 
     public ParasoftJUnit5Watcher(
@@ -220,9 +222,7 @@ public class ParasoftJUnit5Watcher
             client = coverageApiClient;
 
             if (client == null) {
-                client =
-                        ParasoftJUnit5ClientFactory
-                                .createFromSystemProperties();
+                client = CoverageApiClientFactory.createFromSettings();
                 coverageApiClient = client;
             }
         }
