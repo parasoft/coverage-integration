@@ -7,12 +7,15 @@
 
 package com.parasoft.coverage.integration.core;
 
-public final class CoverageApiClientFactory {
-    private CoverageApiClientFactory() {
+public final class CoverageApiClientFactory
+{
+    private CoverageApiClientFactory()
+    {
     }
 
-    public static CoverageApiClient createFromSettings() {
+    public static CoverageApiClient createFromSettings()
+    {
         CoverageIntegrationSettings settings = new CoverageIntegrationSettings();
-        return new ParasoftCoverageApiClient(settings.getCtpUrl(), settings.getEnvironmentId(), settings.getUserId());
+        return new ParasoftCoverageApiClient(settings.getCtpUrl(), settings.getEnvironmentId(), settings.getUserId(), settings.isParallelIdEnabled());
     }
 }

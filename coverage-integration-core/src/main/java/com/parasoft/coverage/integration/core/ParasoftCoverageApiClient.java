@@ -7,9 +7,12 @@
 
 package com.parasoft.coverage.integration.core;
 
+import java.util.UUID;
+
 import com.parasoft.coverage.integration.core.api.AgentsApi;
 import com.parasoft.coverage.integration.core.model.AgentSessionStartModelV3;
 import com.parasoft.coverage.integration.core.model.AgentSessionStopModelV3;
+import com.parasoft.coverage.integration.core.model.AgentStatusModelV3;
 import com.parasoft.coverage.integration.core.model.AgentTestStartModelV3;
 import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3;
 import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultEnum;
@@ -20,8 +23,14 @@ public class ParasoftCoverageApiClient
     private final AgentsApi agentsApi;
     private final Long environmentId;
     private final String userId;
+    private final boolean parallelIdEnabled;
 
     public ParasoftCoverageApiClient(String ctpBaseUrl, Long environmentId, String userId)
+    {
+        this(ctpBaseUrl, environmentId, userId, false);
+    }
+
+    public ParasoftCoverageApiClient(String ctpBaseUrl, Long environmentId, String userId, boolean parallelIdEnabled)
     {
         ApiClient apiClient = new ApiClient();
         apiClient.setBasePath(ctpBaseUrl);
@@ -29,6 +38,7 @@ public class ParasoftCoverageApiClient
         this.agentsApi = new AgentsApi(apiClient);
         this.environmentId = environmentId;
         this.userId = userId;
+        this.parallelIdEnabled = parallelIdEnabled;
     }
 
     @Override
@@ -46,27 +56,37 @@ public class ParasoftCoverageApiClient
     }
 
     @Override
-    public void startTest(String test, String testCase)
+    public CoverageTestContext startTest(String test, String testCase)
     {
+        String parallelId = createParallelId();
+
         try {
             AgentTestStartModelV3 testStart = new AgentTestStartModelV3();
             testStart.setUserId(userId);
+            testStart.setParallelId(parallelId);
             testStart.setTest(test);
             testStart.setTestCase(testCase);
 
-            agentsApi.startTestPost(environmentId, testStart);
+            AgentStatusModelV3 status = agentsApi.startTestPost(environmentId, testStart);
+
+            String baggageHeader = status == null ? null : status.getBaggage();
+
+            return new CoverageTestContext(parallelId, baggageHeader);
         }
         catch (ApiException e) {
             logApiFailure("start Parasoft test", e);
+
+            return new CoverageTestContext(parallelId, null);
         }
     }
 
     @Override
-    public void stopTest(String test, String testCase, ResultEnum result, String message)
+    public void stopTest(String test, String testCase, CoverageTestContext testContext, ResultEnum result, String message)
     {
         try {
             AgentTestStopModelV3 stop = new AgentTestStopModelV3();
             stop.setUserId(userId);
+            stop.setParallelId(testContext == null ? null : testContext.getParallelId());
             stop.setTest(test);
             stop.setTestCase(testCase);
             stop.setResult(result);
@@ -91,6 +111,11 @@ public class ParasoftCoverageApiClient
         catch (ApiException e) {
             logApiFailure("stop Parasoft session", e);
         }
+    }
+
+    private String createParallelId()
+    {
+        return parallelIdEnabled ? UUID.randomUUID().toString() : null;
     }
 
     private static void logApiFailure(String action, ApiException e)

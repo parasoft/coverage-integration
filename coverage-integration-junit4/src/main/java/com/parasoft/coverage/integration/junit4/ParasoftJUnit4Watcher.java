@@ -12,65 +12,77 @@ import org.junit.runner.Description;
 
 import com.parasoft.coverage.integration.core.CoverageApiClient;
 import com.parasoft.coverage.integration.core.CoverageApiClientFactory;
+import com.parasoft.coverage.integration.core.CoverageTestContext;
 import com.parasoft.coverage.integration.core.ParasoftCoverageApiClient;
 import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultEnum;
 
-public class ParasoftJUnit4Watcher extends TestWatcher {
+public class ParasoftJUnit4Watcher extends TestWatcher
+{
     private final CoverageApiClient coverageApiClient;
 
     private final ThreadLocal<TestExecution> currentTest = new ThreadLocal<>();
 
-    public ParasoftJUnit4Watcher() {
+    public ParasoftJUnit4Watcher()
+    {
         this(CoverageApiClientFactory.createFromSettings());
     }
 
-    public ParasoftJUnit4Watcher(String ctpBaseUrl, Long environmentId, String userId) {
+    public ParasoftJUnit4Watcher(String ctpBaseUrl, Long environmentId, String userId)
+    {
         this(new ParasoftCoverageApiClient(ctpBaseUrl, environmentId, userId));
     }
 
-    public ParasoftJUnit4Watcher(CoverageApiClient coverageApiClient) {
+    public ParasoftJUnit4Watcher(CoverageApiClient coverageApiClient)
+    {
         this.coverageApiClient = coverageApiClient;
     }
 
     @Override
-    protected void starting(Description description) {
+    protected void starting(Description description)
+    {
         ParasoftJUnit4Lifecycle.startSessionFromWatcherFallback(coverageApiClient);
         TestExecution execution = new TestExecution(description.getClassName(), description.getMethodName());
 
         currentTest.set(execution);
 
-        coverageApiClient.startTest(execution.testId, execution.testCaseId);
+        execution.testContext = coverageApiClient.startTest(execution.testId, execution.testCaseId);
     }
 
     @Override
-    protected void succeeded(Description description) {
+    protected void succeeded(Description description)
+    {
         stopCurrentTest(ResultEnum.PASS, null);
     }
 
     @Override
-    protected void failed(Throwable e, Description description) {
+    protected void failed(Throwable e, Description description)
+    {
         stopCurrentTest(ResultEnum.FAIL, buildFailureMessage(e));
     }
 
     @Override
-    protected void finished(Description description) {
+    protected void finished(Description description)
+    {
         stopCurrentTest(ResultEnum.INCOMPLETE, null);
     }
 
-    private void stopCurrentTest(ResultEnum result, String failureMessage) {
+    private void stopCurrentTest(ResultEnum result, String failureMessage)
+    {
         TestExecution execution = currentTest.get();
 
         try {
             if (execution != null && !execution.stopped) {
                 execution.stopped = true;
-                coverageApiClient.stopTest(execution.testId, execution.testCaseId, result, failureMessage);
+                coverageApiClient.stopTest(execution.testId, execution.testCaseId, execution.testContext, result, failureMessage);
             }
-        } finally {
+        }
+        finally {
             currentTest.remove();
         }
     }
 
-    private static String buildFailureMessage(Throwable cause) {
+    private static String buildFailureMessage(Throwable cause)
+    {
         if (cause == null) {
             return null;
         }
@@ -97,12 +109,15 @@ public class ParasoftJUnit4Watcher extends TestWatcher {
         return sanitized.length() <= maxLength ? sanitized : sanitized.substring(0, maxLength);
     }
 
-    private static final class TestExecution {
+    private static final class TestExecution
+    {
         private final String testId;
         private final String testCaseId;
+        private CoverageTestContext testContext;
         private boolean stopped;
 
-        private TestExecution(String testId, String testCaseId) {
+        private TestExecution(String testId, String testCaseId)
+        {
             this.testId = testId;
             this.testCaseId = testCaseId;
         }

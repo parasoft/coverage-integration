@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.TestWatcher;
 
 import com.parasoft.coverage.integration.core.CoverageApiClient;
 import com.parasoft.coverage.integration.core.CoverageApiClientFactory;
+import com.parasoft.coverage.integration.core.CoverageTestContext;
 import com.parasoft.coverage.integration.core.ParasoftCoverageApiClient;
 import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultEnum;
 
@@ -50,7 +51,7 @@ public class ParasoftJUnit5Extension implements BeforeEachCallback, TestWatcher
 
         context.getStore(NAMESPACE).put(TestExecution.class, execution);
 
-        coverageApiClient.startTest(testId, testCaseId);
+        execution.testContext = coverageApiClient.startTest(testId, testCaseId);
     }
 
     @Override
@@ -84,7 +85,7 @@ public class ParasoftJUnit5Extension implements BeforeEachCallback, TestWatcher
 
         if (execution != null && !execution.stopped) {
             execution.stopped = true;
-            coverageApiClient.stopTest(execution.testId, execution.testCaseId, result, failureMessage);
+            coverageApiClient.stopTest(execution.testId, execution.testCaseId, execution.testContext, result, failureMessage);
         }
     }
 
@@ -120,6 +121,7 @@ public class ParasoftJUnit5Extension implements BeforeEachCallback, TestWatcher
     {
         private final String testId;
         private final String testCaseId;
+        private CoverageTestContext testContext;
         private boolean stopped;
 
         private TestExecution(String testId, String testCaseId)

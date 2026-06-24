@@ -4,16 +4,18 @@
  * The copyright notice above does not evidence any
  * actual or intended publication of such source code.
  */
+
 package com.parasoft.coverage.integration.core;
 
 import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultEnum;
 
-public interface CoverageApiClient {
+public interface CoverageApiClient
+{
     void startSession();
 
-    void startTest(String test, String testCase);
+    CoverageTestContext startTest(String test, String testCase);
 
-    void stopTest(String test, String testCase, ResultEnum result, String message);
+    void stopTest(String test, String testCase, CoverageTestContext testContext, ResultEnum result, String message);
 
     void stopSession();
 }
