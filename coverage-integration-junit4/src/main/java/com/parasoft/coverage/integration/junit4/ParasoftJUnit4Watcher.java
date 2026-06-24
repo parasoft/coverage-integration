@@ -27,9 +27,8 @@ public class ParasoftJUnit4Watcher extends TestWatcher
         this(CoverageApiClientFactory.createFromSettings());
     }
 
-    public ParasoftJUnit4Watcher(String ctpBaseUrl, Long environmentId, String userId)
-    {
-        this(new ParasoftCoverageApiClient(ctpBaseUrl, environmentId, userId));
+    public ParasoftJUnit4Watcher(String ctpBaseUrl, Long environmentId, String userId) {
+        this(new ParasoftCoverageApiClient(ctpBaseUrl, environmentId, userId, null));
     }
 
     public ParasoftJUnit4Watcher(CoverageApiClient coverageApiClient)

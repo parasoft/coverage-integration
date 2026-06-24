@@ -11,11 +11,13 @@ import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultE
 
 public interface CoverageApiClient
 {
-    void startSession();
+    String startSession();
 
     CoverageTestContext startTest(String test, String testCase);
 
     void stopTest(String test, String testCase, CoverageTestContext testContext, ResultEnum result, String message);
 
     void stopSession();
+
+    void publishResults(String sessionId, String testConfig, String userId, String toolName);
 }

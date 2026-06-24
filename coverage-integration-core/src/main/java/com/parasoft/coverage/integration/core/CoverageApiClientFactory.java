@@ -16,6 +16,6 @@ public final class CoverageApiClientFactory
     public static CoverageApiClient createFromSettings()
     {
         CoverageIntegrationSettings settings = new CoverageIntegrationSettings();
-        return new ParasoftCoverageApiClient(settings.getCtpUrl(), settings.getEnvironmentId(), settings.getUserId(), settings.isParallelIdEnabled());
+        return new ParasoftCoverageApiClient(settings.getCtpUrl(), settings.getEnvironmentId(), settings.getUserId(), settings.getSessionTag(), settings.isParallelIdEnabled());
     }
 }

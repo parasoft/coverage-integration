@@ -34,7 +34,7 @@ public class ParasoftJUnit5Extension implements BeforeEachCallback, TestWatcher
 
     public ParasoftJUnit5Extension(String ctpBaseUrl, Long environmentId, String userId)
     {
-        this(new ParasoftCoverageApiClient(ctpBaseUrl, environmentId, userId));
+        this(new ParasoftCoverageApiClient(ctpBaseUrl, environmentId, userId, null));
     }
 
     public ParasoftJUnit5Extension(CoverageApiClient coverageApiClient)

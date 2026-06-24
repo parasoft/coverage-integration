@@ -16,6 +16,7 @@ import com.parasoft.coverage.integration.core.CoverageApiClientFactory;
 public class ParasoftJUnit6SessionListener implements LauncherSessionListener
 {
     private final CoverageApiClient coverageApiClient;
+    private String sessionId;
 
     public ParasoftJUnit6SessionListener()
     {
@@ -30,12 +31,15 @@ public class ParasoftJUnit6SessionListener implements LauncherSessionListener
     @Override
     public void launcherSessionOpened(LauncherSession session)
     {
-        coverageApiClient.startSession();
+        sessionId = coverageApiClient.startSession();
     }
 
     @Override
     public void launcherSessionClosed(LauncherSession session)
     {
         coverageApiClient.stopSession();
+        if (sessionId != null) {
+            coverageApiClient.publishResults(sessionId, null, null, null);
+        }
     }
 }

@@ -23,6 +23,7 @@ final class ParasoftJUnit4Lifecycle
     private static final AtomicBoolean SESSION_STOPPED = new AtomicBoolean(false);
     private static final AtomicBoolean SHUTDOWN_HOOK_REGISTERED = new AtomicBoolean(false);
     private static volatile SessionOwner sessionOwner = SessionOwner.NONE;
+    private static volatile String sessionId = null;
 
     private ParasoftJUnit4Lifecycle()
     {
@@ -31,7 +32,7 @@ final class ParasoftJUnit4Lifecycle
     static synchronized void startSessionFromRunListener(CoverageApiClient coverageApiClient)
     {
         if (sessionOwner == SessionOwner.NONE) {
-            coverageApiClient.startSession();
+            sessionId = coverageApiClient.startSession();
         }
         sessionOwner = SessionOwner.RUN_LISTENER;
     }
@@ -40,6 +41,9 @@ final class ParasoftJUnit4Lifecycle
     {
         if (sessionOwner == SessionOwner.RUN_LISTENER && SESSION_STOPPED.compareAndSet(false, true)) {
             coverageApiClient.stopSession();
+            if (sessionId != null) {
+                coverageApiClient.publishResults(sessionId, null, null, null);
+            }
         }
     }
 
@@ -49,7 +53,7 @@ final class ParasoftJUnit4Lifecycle
             return;
         }
 
-        coverageApiClient.startSession();
+        sessionId = coverageApiClient.startSession();
         sessionOwner = SessionOwner.WATCHER_FALLBACK;
 
         if (SHUTDOWN_HOOK_REGISTERED.compareAndSet(false, true)) {
@@ -62,6 +66,9 @@ final class ParasoftJUnit4Lifecycle
     {
         if (sessionOwner == SessionOwner.WATCHER_FALLBACK && SESSION_STOPPED.compareAndSet(false, true)) {
             coverageApiClient.stopSession();
+            if (sessionId != null) {
+                coverageApiClient.publishResults(sessionId, null, null, null);
+            }
         }
     }
 }
