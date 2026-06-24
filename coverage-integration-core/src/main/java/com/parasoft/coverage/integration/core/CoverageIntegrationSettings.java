@@ -47,6 +47,10 @@ public final class CoverageIntegrationSettings {
         return getOptional("parasoft.coverage.integration.ctp.userId");
     }
 
+    public boolean isParallelIdEnabled() {
+        return Boolean.parseBoolean(getOptional("parasoft.coverage.integration.ctp.parallelId"));
+    }
+
     public String getSessionTag() {
         return getOptional("parasoft.coverage.integration.dtp.sessionTag");
     }
