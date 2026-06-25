@@ -14,6 +14,8 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.jupiter.api.extension.TestWatcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.parasoft.coverage.integration.core.CoverageApiClient;
 import com.parasoft.coverage.integration.core.CoverageApiClientFactory;
@@ -23,6 +25,8 @@ import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultE
 
 public class ParasoftJUnit6Extension implements BeforeEachCallback, TestWatcher
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParasoftJUnit6Extension.class);
+
     private static final Namespace NAMESPACE = Namespace.create(ParasoftJUnit6Extension.class);
 
     private final CoverageApiClient coverageApiClient;
@@ -51,6 +55,7 @@ public class ParasoftJUnit6Extension implements BeforeEachCallback, TestWatcher
 
         context.getStore(NAMESPACE).put(TestExecution.class, execution);
 
+        LOGGER.debug("JUnit 6 test starting: test={}, testCase={}", testId, testCaseId);
         execution.testContext = coverageApiClient.startTest(testId, testCaseId);
     }
 
@@ -63,6 +68,7 @@ public class ParasoftJUnit6Extension implements BeforeEachCallback, TestWatcher
     @Override
     public void testFailed(ExtensionContext context, Throwable cause)
     {
+        LOGGER.info("JUnit 6 test failed: {}", context.getDisplayName());
         stopCurrentTest(context, ResultEnum.FAIL, buildFailureMessage(cause));
     }
 
@@ -75,6 +81,7 @@ public class ParasoftJUnit6Extension implements BeforeEachCallback, TestWatcher
     @Override
     public void testDisabled(ExtensionContext context, Optional<String> reason)
     {
+        LOGGER.debug("JUnit 6 test disabled: displayName={}, reason={}", context.getDisplayName(), reason.orElse(null));
         // Test was never started; nothing to stop
     }
 
@@ -85,7 +92,12 @@ public class ParasoftJUnit6Extension implements BeforeEachCallback, TestWatcher
 
         if (execution != null && !execution.stopped) {
             execution.stopped = true;
+            LOGGER.debug("JUnit 6 test stopping: test={}, testCase={}, result={}",
+                    execution.testId, execution.testCaseId, result);
             coverageApiClient.stopTest(execution.testId, execution.testCaseId, execution.testContext, result, failureMessage);
+        } else {
+            LOGGER.debug("No active JUnit 6 test found to stop for displayName={}, result={}",
+                    context.getDisplayName(), result);
         }
     }
 

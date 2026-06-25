@@ -27,7 +27,15 @@
         <jakarta.annotation.version>3.0.0</jakarta.annotation.version>
         <junit4.version>4.13.2</junit4.version>
         <junit5.version>5.14.2</junit5.version>
+        <slf4j.version>2.0.17</slf4j.version>
     </properties>
+    <dependencies>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+    </dependencies>
     <dependencyManagement>
         <dependencies>
             <dependency>

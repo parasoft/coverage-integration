@@ -1,0 +1,68 @@
+# Coverage Integration
+
+Coverage Integration reports JUnit test execution events to Parasoft CTP.
+
+## Logging
+
+This project uses SLF4J and includes only the `slf4j-api` dependency. It does not provide or configure a logging backend, so debug logging is not shown by default. Applications that use this library control logging through their own SLF4J backend, such as Logback, Log4j 2, JUL, or `slf4j-simple`.
+
+The project logs under the `com.parasoft.coverage.integration` package.
+
+## Enable Debug Logging
+
+Configure your application's logging backend to set `com.parasoft.coverage.integration` to `DEBUG`.
+
+### Logback
+
+Add or update `logback.xml` on the application classpath:
+
+```xml
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.parasoft.coverage.integration" level="DEBUG" />
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
+</configuration>
+```
+
+### Log4j 2
+
+Add or update `log4j2.xml` on the application classpath:
+
+```xml
+<Configuration>
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n" />
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="com.parasoft.coverage.integration" level="debug" />
+        <Root level="info">
+            <AppenderRef ref="Console" />
+        </Root>
+    </Loggers>
+</Configuration>
+```
+
+### slf4j-simple
+
+Pass this system property when running tests:
+
+```shell
+-Dorg.slf4j.simpleLogger.log.com.parasoft.coverage.integration=debug
+```
+
+For Maven Surefire:
+
+```shell
+mvn test -Dorg.slf4j.simpleLogger.log.com.parasoft.coverage.integration=debug
+```

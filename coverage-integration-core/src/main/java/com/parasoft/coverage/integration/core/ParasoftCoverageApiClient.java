@@ -24,9 +24,13 @@ import com.parasoft.coverage.integration.core.model.CoverageUploadRequestModelV3
 
 import com.google.gson.Gson;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ParasoftCoverageApiClient
         implements CoverageApiClient
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParasoftCoverageApiClient.class);
     private static final long POLL_INTERVAL_MS = 2000L;
     private static final int POLL_MAX_ATTEMPTS = 300;
     private static final Gson GSON = new Gson();
@@ -54,16 +58,20 @@ public class ParasoftCoverageApiClient
         this.userId = userId;
         this.sessionTag = sessionTag;
         this.parallelIdEnabled = parallelIdEnabled;
+
+        LOGGER.info("Configured Parasoft coverage API client for environment {}", environmentId);
     }
 
     @Override
     public String startSession()
     {
+        LOGGER.info("Starting Parasoft coverage session for environment {}", environmentId);
         try {
             AgentSessionStartModelV3 sessionStart = new AgentSessionStartModelV3();
             sessionStart.setUserId(userId);
 
             AgentStatusModelV3 status = agentsApi.startSessionPost(environmentId, sessionStart);
+            LOGGER.debug("Started Parasoft coverage session for environment {}", environmentId);
             return status != null ? status.getSession() : null;
         }
         catch (ApiException e) {
@@ -77,6 +85,7 @@ public class ParasoftCoverageApiClient
     {
         String parallelId = createParallelId();
 
+        LOGGER.debug("Starting Parasoft coverage test: test={}, testCase={}", test, testCase);
         try {
             AgentTestStartModelV3 testStart = new AgentTestStartModelV3();
             testStart.setUserId(userId);
@@ -88,6 +97,7 @@ public class ParasoftCoverageApiClient
 
             String baggageHeader = status == null ? null : status.getBaggage();
 
+            LOGGER.debug("Started Parasoft coverage test: test={}, testCase={}", test, testCase);
             return new CoverageTestContext(parallelId, baggageHeader);
         }
         catch (ApiException e) {
@@ -100,6 +110,7 @@ public class ParasoftCoverageApiClient
     @Override
     public void stopTest(String test, String testCase, CoverageTestContext testContext, ResultEnum result, String message)
     {
+        LOGGER.debug("Stopping Parasoft coverage test: test={}, testCase={}, result={}", test, testCase, result);
         try {
             AgentTestStopModelV3 stop = new AgentTestStopModelV3();
             stop.setUserId(userId);
@@ -110,6 +121,7 @@ public class ParasoftCoverageApiClient
             stop.setMessage(message);
 
             agentsApi.stopTestPost(environmentId, stop);
+            LOGGER.debug("Stopped Parasoft coverage test: test={}, testCase={}, result={}", test, testCase, result);
         }
         catch (ApiException e) {
             logApiFailure("stop Parasoft test", e);
@@ -119,11 +131,13 @@ public class ParasoftCoverageApiClient
     @Override
     public void stopSession()
     {
+        LOGGER.info("Stopping Parasoft coverage session for environment {}", environmentId);
         try {
             AgentSessionStopModelV3 stop = new AgentSessionStopModelV3();
             stop.setUserId(userId);
 
             agentsApi.stopSessionPost(environmentId, stop);
+            LOGGER.debug("Stopped Parasoft coverage session for environment {}", environmentId);
         }
         catch (ApiException e) {
             logApiFailure("stop Parasoft session", e);
@@ -182,6 +196,6 @@ public class ParasoftCoverageApiClient
 
     private static void logApiFailure(String action, ApiException e)
     {
-        System.err.println("Failed to " + action + ": " + e.getMessage());
+        LOGGER.error("Failed to {}: {}", action, e.getMessage(), e);
     }
 }

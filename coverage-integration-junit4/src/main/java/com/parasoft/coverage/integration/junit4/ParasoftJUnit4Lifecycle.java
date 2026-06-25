@@ -9,10 +9,15 @@ package com.parasoft.coverage.integration.junit4;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.parasoft.coverage.integration.core.CoverageApiClient;
 
 final class ParasoftJUnit4Lifecycle
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParasoftJUnit4Lifecycle.class);
+
     private enum SessionOwner
     {
         NONE,
@@ -32,7 +37,10 @@ final class ParasoftJUnit4Lifecycle
     static synchronized void startSessionFromRunListener(CoverageApiClient coverageApiClient)
     {
         if (sessionOwner == SessionOwner.NONE) {
+            LOGGER.info("Starting Parasoft coverage session from JUnit 4 run listener");
             sessionId = coverageApiClient.startSession();
+        } else {
+            LOGGER.debug("JUnit 4 coverage session is already owned by {}", sessionOwner);
         }
         sessionOwner = SessionOwner.RUN_LISTENER;
     }
@@ -40,23 +48,30 @@ final class ParasoftJUnit4Lifecycle
     static synchronized void stopSessionFromRunListener(CoverageApiClient coverageApiClient)
     {
         if (sessionOwner == SessionOwner.RUN_LISTENER && SESSION_STOPPED.compareAndSet(false, true)) {
+            LOGGER.info("Stopping Parasoft coverage session from JUnit 4 run listener");
             coverageApiClient.stopSession();
             if (sessionId != null) {
                 coverageApiClient.publishResults(sessionId, null, null, null);
             }
+        } else {
+            LOGGER.debug("Skipping JUnit 4 run listener session stop because owner={} stopped={}",
+                    sessionOwner, SESSION_STOPPED.get());
         }
     }
 
     static synchronized void startSessionFromWatcherFallback(CoverageApiClient coverageApiClient)
     {
         if (sessionOwner != SessionOwner.NONE) {
+            LOGGER.debug("Skipping JUnit 4 watcher fallback session start because owner={}", sessionOwner);
             return;
         }
 
+        LOGGER.warn("Starting Parasoft coverage session from JUnit 4 watcher fallback; register ParasoftJUnit4RunListener for full run lifecycle coverage");
         sessionId = coverageApiClient.startSession();
         sessionOwner = SessionOwner.WATCHER_FALLBACK;
 
         if (SHUTDOWN_HOOK_REGISTERED.compareAndSet(false, true)) {
+            LOGGER.debug("Registering JUnit 4 watcher fallback shutdown hook");
             Runtime.getRuntime().addShutdownHook(new Thread(() -> stopSessionFromWatcherFallback(coverageApiClient),
                     "parasoft-coverage-session-stop"));
         }
@@ -65,6 +80,7 @@ final class ParasoftJUnit4Lifecycle
     private static synchronized void stopSessionFromWatcherFallback(CoverageApiClient coverageApiClient)
     {
         if (sessionOwner == SessionOwner.WATCHER_FALLBACK && SESSION_STOPPED.compareAndSet(false, true)) {
+            LOGGER.info("Stopping Parasoft coverage session from JUnit 4 watcher fallback");
             coverageApiClient.stopSession();
             if (sessionId != null) {
                 coverageApiClient.publishResults(sessionId, null, null, null);

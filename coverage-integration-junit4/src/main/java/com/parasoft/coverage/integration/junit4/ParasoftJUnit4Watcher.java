@@ -9,6 +9,8 @@ package com.parasoft.coverage.integration.junit4;
 
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.parasoft.coverage.integration.core.CoverageApiClient;
 import com.parasoft.coverage.integration.core.CoverageApiClientFactory;
@@ -18,6 +20,8 @@ import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultE
 
 public class ParasoftJUnit4Watcher extends TestWatcher
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParasoftJUnit4Watcher.class);
+
     private final CoverageApiClient coverageApiClient;
 
     private final ThreadLocal<TestExecution> currentTest = new ThreadLocal<>();
@@ -44,6 +48,7 @@ public class ParasoftJUnit4Watcher extends TestWatcher
 
         currentTest.set(execution);
 
+        LOGGER.debug("JUnit 4 test starting: test={}, testCase={}", execution.testId, execution.testCaseId);
         execution.testContext = coverageApiClient.startTest(execution.testId, execution.testCaseId);
     }
 
@@ -56,6 +61,7 @@ public class ParasoftJUnit4Watcher extends TestWatcher
     @Override
     protected void failed(Throwable e, Description description)
     {
+        LOGGER.info("JUnit 4 test failed: class={}, method={}", description.getClassName(), description.getMethodName());
         stopCurrentTest(ResultEnum.FAIL, buildFailureMessage(e));
     }
 
@@ -72,10 +78,14 @@ public class ParasoftJUnit4Watcher extends TestWatcher
         try {
             if (execution != null && !execution.stopped) {
                 execution.stopped = true;
+                LOGGER.debug("JUnit 4 test stopping: test={}, testCase={}, result={}",
+                        execution.testId, execution.testCaseId, result);
                 coverageApiClient.stopTest(execution.testId, execution.testCaseId, execution.testContext, result, failureMessage);
             }
-        }
-        finally {
+            else {
+                LOGGER.debug("No active JUnit 4 test found to stop for result={}", result);
+            }
+        } finally {
             currentTest.remove();
         }
     }
