@@ -16,6 +16,7 @@ import com.parasoft.coverage.integration.core.CoverageApiClient;
 import com.parasoft.coverage.integration.core.CoverageApiClientFactory;
 import com.parasoft.coverage.integration.core.CoverageTestContext;
 import com.parasoft.coverage.integration.core.ParasoftCoverageApiClient;
+import com.parasoft.coverage.integration.core.internal.CoverageExecutionContext;
 import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultEnum;
 
 public class ParasoftJUnit4Watcher extends TestWatcher
@@ -31,7 +32,8 @@ public class ParasoftJUnit4Watcher extends TestWatcher
         this(CoverageApiClientFactory.createFromSettings());
     }
 
-    public ParasoftJUnit4Watcher(String ctpBaseUrl, Long environmentId, String userId) {
+    public ParasoftJUnit4Watcher(String ctpBaseUrl, Long environmentId, String userId)
+    {
         this(new ParasoftCoverageApiClient(ctpBaseUrl, environmentId, userId, null));
     }
 
@@ -49,7 +51,18 @@ public class ParasoftJUnit4Watcher extends TestWatcher
         currentTest.set(execution);
 
         LOGGER.debug("JUnit 4 test starting: test={}, testCase={}", execution.testId, execution.testCaseId);
-        execution.testContext = coverageApiClient.startTest(execution.testId, execution.testCaseId);
+
+        try {
+            execution.testContext = coverageApiClient.startTest(execution.testId, execution.testCaseId);
+            execution.contextThreadId = CoverageExecutionContext.setCurrent(execution.testContext);
+        }
+        catch (RuntimeException e) {
+            LOGGER.error("Failed to initialize Parasoft coverage context for JUnit 4 test: test={}, testCase={}",
+                    execution.testId, execution.testCaseId, e);
+            currentTest.remove();
+            CoverageExecutionContext.clearCurrent();
+            throw e;
+        }
     }
 
     @Override
@@ -80,12 +93,25 @@ public class ParasoftJUnit4Watcher extends TestWatcher
                 execution.stopped = true;
                 LOGGER.debug("JUnit 4 test stopping: test={}, testCase={}, result={}",
                         execution.testId, execution.testCaseId, result);
-                coverageApiClient.stopTest(execution.testId, execution.testCaseId, execution.testContext, result, failureMessage);
+                coverageApiClient.stopTest(
+                        execution.testId,
+                        execution.testCaseId,
+                        execution.testContext,
+                        result,
+                        failureMessage);
             }
             else {
                 LOGGER.debug("No active JUnit 4 test found to stop for result={}", result);
             }
-        } finally {
+        }
+        finally {
+            if (execution == null) {
+                CoverageExecutionContext.clearCurrent();
+            }
+            else {
+                CoverageExecutionContext.clear(execution.contextThreadId);
+            }
+
             currentTest.remove();
         }
     }
@@ -123,6 +149,7 @@ public class ParasoftJUnit4Watcher extends TestWatcher
         private final String testId;
         private final String testCaseId;
         private CoverageTestContext testContext;
+        private long contextThreadId = -1;
         private boolean stopped;
 
         private TestExecution(String testId, String testCaseId)

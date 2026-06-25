@@ -21,6 +21,7 @@ import com.parasoft.coverage.integration.core.CoverageApiClient;
 import com.parasoft.coverage.integration.core.CoverageApiClientFactory;
 import com.parasoft.coverage.integration.core.CoverageTestContext;
 import com.parasoft.coverage.integration.core.ParasoftCoverageApiClient;
+import com.parasoft.coverage.integration.core.internal.CoverageExecutionContext;
 import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultEnum;
 
 public class ParasoftJUnit6Extension implements BeforeEachCallback, TestWatcher
@@ -51,12 +52,25 @@ public class ParasoftJUnit6Extension implements BeforeEachCallback, TestWatcher
     {
         String testId = context.getRequiredTestClass().getName();
         String testCaseId = context.getRequiredTestMethod().getName();
+        String executionKey = context.getUniqueId();
         TestExecution execution = new TestExecution(testId, testCaseId);
 
-        context.getStore(NAMESPACE).put(TestExecution.class, execution);
+        Store store = getExecutionStore(context);
+        store.put(executionKey, execution);
 
         LOGGER.debug("JUnit 6 test starting: test={}, testCase={}", testId, testCaseId);
-        execution.testContext = coverageApiClient.startTest(testId, testCaseId);
+
+        try {
+            execution.testContext = coverageApiClient.startTest(testId, testCaseId);
+            execution.contextThreadId = CoverageExecutionContext.setCurrent(execution.testContext);
+        }
+        catch (RuntimeException e) {
+            LOGGER.error("Failed to initialize Parasoft coverage context for JUnit 6 test: test={}, testCase={}",
+                    testId, testCaseId, e);
+            store.remove(executionKey);
+            CoverageExecutionContext.clearCurrent();
+            throw e;
+        }
     }
 
     @Override
@@ -87,18 +101,40 @@ public class ParasoftJUnit6Extension implements BeforeEachCallback, TestWatcher
 
     private void stopCurrentTest(ExtensionContext context, ResultEnum result, String failureMessage)
     {
-        Store store = context.getStore(NAMESPACE);
-        TestExecution execution = store.get(TestExecution.class, TestExecution.class);
+        Store store = getExecutionStore(context);
+        TestExecution execution = store.remove(context.getUniqueId(), TestExecution.class);
 
-        if (execution != null && !execution.stopped) {
-            execution.stopped = true;
-            LOGGER.debug("JUnit 6 test stopping: test={}, testCase={}, result={}",
-                    execution.testId, execution.testCaseId, result);
-            coverageApiClient.stopTest(execution.testId, execution.testCaseId, execution.testContext, result, failureMessage);
-        } else {
-            LOGGER.debug("No active JUnit 6 test found to stop for displayName={}, result={}",
-                    context.getDisplayName(), result);
+        try {
+            if (execution != null && !execution.stopped) {
+                execution.stopped = true;
+                LOGGER.debug("JUnit 6 test stopping: test={}, testCase={}, result={}",
+                        execution.testId, execution.testCaseId, result);
+                coverageApiClient.stopTest(
+                        execution.testId,
+                        execution.testCaseId,
+                        execution.testContext,
+                        result,
+                        failureMessage);
+            }
+            else {
+                LOGGER.debug("No active JUnit 6 test found to stop for displayName={}, result={}",
+                        context.getDisplayName(), result);
+            }
         }
+        finally {
+            if (execution == null) {
+                CoverageExecutionContext.clearCurrent();
+            }
+            else {
+                CoverageExecutionContext.clear(execution.contextThreadId);
+            }
+        }
+    }
+
+    private static Store getExecutionStore(ExtensionContext context)
+    {
+        ExtensionContext storeContext = context.getParent().orElse(context);
+        return storeContext.getStore(NAMESPACE);
     }
 
     private static String buildFailureMessage(Throwable cause)
@@ -134,6 +170,7 @@ public class ParasoftJUnit6Extension implements BeforeEachCallback, TestWatcher
         private final String testId;
         private final String testCaseId;
         private CoverageTestContext testContext;
+        private long contextThreadId = -1;
         private boolean stopped;
 
         private TestExecution(String testId, String testCaseId)
