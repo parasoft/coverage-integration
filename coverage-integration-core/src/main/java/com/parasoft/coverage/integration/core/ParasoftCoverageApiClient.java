@@ -9,6 +9,10 @@ package com.parasoft.coverage.integration.core;
 
 import java.util.UUID;
 
+import okhttp3.Credentials;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+
 import com.parasoft.coverage.integration.core.api.AgentsApi;
 import com.parasoft.coverage.integration.core.api.CoverageApi;
 import com.parasoft.coverage.integration.core.model.AgentSessionStartModelV3;
@@ -49,7 +53,35 @@ public class ParasoftCoverageApiClient
 
     public ParasoftCoverageApiClient(String ctpBaseUrl, Long environmentId, String userId, String sessionTag, boolean parallelIdEnabled)
     {
-        ApiClient apiClient = new ApiClient();
+        this(ctpBaseUrl, environmentId, userId, sessionTag, parallelIdEnabled, null, null, null);
+    }
+
+    public ParasoftCoverageApiClient(String ctpBaseUrl, Long environmentId, String userId, String sessionTag, boolean parallelIdEnabled, String username, String password, String token)
+    {
+        OkHttpClient.Builder httpClientBuilder = new OkHttpClient.Builder();
+        if (token != null && !token.isBlank()) {
+            LOGGER.info("Configuring Parasoft coverage API client with bearer token authentication");
+            final String bearerToken = token;
+            httpClientBuilder.addInterceptor(chain -> {
+                Request request = chain.request().newBuilder()
+                        .header("Authorization", "Bearer " + bearerToken)
+                        .build();
+                return chain.proceed(request);
+            });
+        } else if (username != null && !username.isBlank()) {
+            LOGGER.info("Configuring Parasoft coverage API client with basic authentication for user '{}'", username);
+            final String credentials = Credentials.basic(username, password != null ? password : "");
+            httpClientBuilder.addInterceptor(chain -> {
+                Request request = chain.request().newBuilder()
+                        .header("Authorization", credentials)
+                        .build();
+                return chain.proceed(request);
+            });
+        } else {
+            LOGGER.warn("No credentials configured for Parasoft coverage API client - requests will be unauthenticated");
+        }
+
+        ApiClient apiClient = new ApiClient(httpClientBuilder.build());
         apiClient.setBasePath(ctpBaseUrl);
 
         this.agentsApi = new AgentsApi(apiClient);
@@ -85,7 +117,7 @@ public class ParasoftCoverageApiClient
     {
         String parallelId = createParallelId();
 
-        LOGGER.debug("Starting Parasoft coverage test: test={}, testCase={}", test, testCase);
+        LOGGER.info("Starting Parasoft coverage test: test={}, testCase={}", test, testCase);
         try {
             AgentTestStartModelV3 testStart = new AgentTestStartModelV3();
             testStart.setUserId(userId);
@@ -97,7 +129,7 @@ public class ParasoftCoverageApiClient
 
             String baggageHeader = status == null ? null : status.getBaggage();
 
-            LOGGER.debug("Started Parasoft coverage test: test={}, testCase={}", test, testCase);
+            LOGGER.info("Started Parasoft coverage test: test={}, testCase={}", test, testCase);
             return new CoverageTestContext(parallelId, baggageHeader);
         }
         catch (ApiException e) {
@@ -110,7 +142,7 @@ public class ParasoftCoverageApiClient
     @Override
     public void stopTest(String test, String testCase, CoverageTestContext testContext, ResultEnum result, String message)
     {
-        LOGGER.debug("Stopping Parasoft coverage test: test={}, testCase={}, result={}", test, testCase, result);
+        LOGGER.info("Stopping Parasoft coverage test: test={}, testCase={}, result={}", test, testCase, result);
         try {
             AgentTestStopModelV3 stop = new AgentTestStopModelV3();
             stop.setUserId(userId);
@@ -121,7 +153,7 @@ public class ParasoftCoverageApiClient
             stop.setMessage(message);
 
             agentsApi.stopTestPost(environmentId, stop);
-            LOGGER.debug("Stopped Parasoft coverage test: test={}, testCase={}, result={}", test, testCase, result);
+            LOGGER.info("Stopped Parasoft coverage test: test={}, testCase={}, result={}", test, testCase, result);
         }
         catch (ApiException e) {
             logApiFailure("stop Parasoft test", e);
