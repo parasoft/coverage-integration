@@ -26,8 +26,6 @@ import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3;
 import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultEnum;
 import com.parasoft.coverage.integration.core.model.CoverageUploadRequestModelV3.AnalysisTypeEnum;
 
-import com.google.gson.Gson;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +35,6 @@ public class ParasoftCoverageApiClient
     private static final Logger LOGGER = LoggerFactory.getLogger(ParasoftCoverageApiClient.class);
     private static final long POLL_INTERVAL_MS = 2000L;
     private static final int POLL_MAX_ATTEMPTS = 300;
-    private static final Gson GSON = new Gson();
 
     private final AgentsApi agentsApi;
     private final CoverageApi coverageApi;
@@ -188,9 +185,7 @@ public class ParasoftCoverageApiClient
             uploadRequest.setAnalysisType(AnalysisTypeEnum.UNIT_TEST);
 
             coverageApi.uploadCoverage(environmentId, sessionId, testConfig, userId, toolName, true, uploadRequest);
-            Thread pollThread = new Thread(() -> pollPublishStatus(sessionId), "parasoft-coverage-publish-poll");
-            pollThread.setDaemon(true);
-            pollThread.start();
+            pollPublishStatus(sessionId);
         }
         catch (ApiException e) {
             logApiFailure("publish coverage results", e);
@@ -207,7 +202,7 @@ public class ParasoftCoverageApiClient
                         coverageApi.getCoverageSessionPublishStatus(environmentId, sessionId, userId);
 
                 if (result != null) {
-                    System.out.println(GSON.toJson(result));
+                    LOGGER.info(result.getMessage());
 
                     StatusEnum status = result.getStatus();
                     if (status == StatusEnum.PUBLISHED || status == StatusEnum.ERROR) {
