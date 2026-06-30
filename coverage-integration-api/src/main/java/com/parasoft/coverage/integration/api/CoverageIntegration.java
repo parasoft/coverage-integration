@@ -1,11 +1,23 @@
 /*
- * (C) Copyright Parasoft Corporation 2026.  All rights reserved.
- * THIS IS UNPUBLISHED PROPRIETARY SOURCE CODE OF Parasoft
- * The copyright notice above does not evidence any
- * actual or intended publication of such source code.
+ * Copyright 2026 Parasoft Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.parasoft.coverage.integration.api;
+
+import java.util.Collections;
+import java.util.Map;
 
 import com.parasoft.coverage.integration.core.internal.CoverageExecutionContext;
 
@@ -59,15 +71,18 @@ public final class CoverageIntegration
     }
 
     /**
-     * Returns the Baggage HTTP header value that contains the current
+     * Returns the Baggage HTTP header that contains the current
      * {@code test-operator-id} returned by the CTP {@code /test/start} API.
      *
-     * @return the Baggage header value containing {@code test-operator-id}, or
-     *         {@code null} when no current test operator ID applies to the
-     *         current test
+     * @return a map containing the {@code Baggage} header name and value, or an
+     *         empty map when no current test operator ID applies to the current
+     *         test
      */
-    public static String getCurrentTestOperatorIdHeader()
+    public static Map<String, String> getCurrentTestOperatorIdHeader()
     {
-        return getBaggageHeader();
+        String baggageHeader = getBaggageHeader();
+
+        return baggageHeader == null ? Collections.emptyMap()
+                : Collections.singletonMap(BAGGAGE_HEADER_NAME, baggageHeader);
     }
 }
