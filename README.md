@@ -10,6 +10,35 @@ Use `CoverageIntegration#getCurrentTestOperatorIdHeader()` to get the `Baggage` 
 
 For rare standalone use cases, such as tests launched from a `main` method, use `CoverageApiClient` from the API module to start and stop sessions and tests directly.
 
+## Playwright
+
+Add the Playwright integration dependency alongside the JUnit integration dependency used by the test project.
+
+```xml
+<dependency>
+    <groupId>com.parasoft</groupId>
+    <artifactId>coverage-integration-playwright</artifactId>
+    <version>${coverage-integration.version}</version>
+    <scope>test</scope>
+</dependency>
+```
+
+Use `PlaywrightCoverageIntegration#createBrowserContextOptions()` when creating the browser context. Create the page from that configured context.
+
+```java
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Page;
+import com.parasoft.coverage.integration.playwright.PlaywrightCoverageIntegration;
+
+Browser.NewContextOptions contextOptions = PlaywrightCoverageIntegration.createBrowserContextOptions();
+
+BrowserContext context = browser.newContext(contextOptions);
+Page page = context.newPage();
+```
+
+The returned options include the current test's `Baggage` header when CTP provides one. In single-user mode, or when no baggage value is available, the returned options contain no additional HTTP headers.
+
 ## Javadoc
 
 The API module generates Javadoc as part of the Maven `package` phase:
