@@ -20,6 +20,105 @@ mvn -pl coverage-integration-api -am package
 
 The generated documentation is written to `coverage-integration-api/target/reports/apidocs`. The GitHub Actions workflow in `.github/workflows/publish-javadoc.yml` publishes that Javadoc to GitHub Pages when changes are pushed to `master`, or when the workflow is run manually.
 
+## Coverage properties file
+
+Create a coverage-integration.properties file to configure communication with CTP during the testing workflow. This file also provides the information needed to publish test results and coverage after all tests have completed.
+
+```properties
+# URL that points your CTP instance
+parasoft.coverage.integration.ctp.url=http://localhost:8080/em/
+
+# The ID of CTP environment where your coverage agents are configured
+parasoft.coverage.integration.ctp.envId=1
+
+# Session tag used when publishing test and coverage results
+parasoft.coverage.integration.dtp.sessionTag=unit-testing-session
+
+# Authentication username for CTP
+parasoft.coverage.integration.ctp.auth.username=admin
+
+# Password for CTP with support for variable resolution
+parasoft.coverage.integration.ctp.auth.password=${env_var:PASSWORD}
+
+# OAuth bearer token in the case where CTP is setup with OIDC authentication
+parasoft.coverage.integration.ctp.auth.token=<bearer token>
+```
+Place this file on your project's classpath, for example in src/test/resources.
+
+## JUnit 5 and 6
+Add the Maven dependency that matches the version of JUnit used by your project. The example below demonstrates the dependency for JUnit 5.
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>com.parasoft</groupId>
+        <artifactId>coverage-integration-junit5</artifactId>
+        <version>${coverage-integration.version}</version>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+Enable JUnit extension auto-detection by setting the following system property when running your unit tests. This allows the extension to be loaded automatically without modifying your existing test code.
+
+-Djunit.jupiter.extensions.autodetection.enabled=true
+
+
+## JUnit 4
+
+JUnit 4 users should add the JUnit 4 integration dependency and register the run listener in Maven Surefire. The listener starts the coverage session when the JUnit run starts and stops/publishes the session when the run finishes.
+ 
+```xml
+<dependencies>
+    <dependency>
+        <groupId>com.parasoft</groupId>
+        <artifactId>coverage-integration-junit4</artifactId>
+        <version>${coverage-integration.version}</version>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+ 
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+                <properties>
+                    <property>
+                        <name>listener</name>
+                        <value>com.parasoft.coverage.integration.junit4.ParasoftJUnit4RunListener</value>
+                    </property>
+                </properties>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+```
+ 
+If JUnit 4 tests run through Maven Failsafe, configure the same listener there:
+ 
+```xml
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-failsafe-plugin</artifactId>
+    <configuration>
+        <properties>
+            <property>
+                <name>listener</name>
+                <value>com.parasoft.coverage.integration.junit4.ParasoftJUnit4RunListener</value>
+            </property>
+        </properties>
+    </configuration>
+</plugin>
+```
+
+The JUnit 4 TestWatcher must be added to each test class that should publish test results and coverage.
+```java
+@Rule
+public ParasoftJUnit4Watcher parasoftJUnit4Watcher = new ParasoftJUnit4Watcher();
+```
+
 ## Logging
 
 This project uses SLF4J and includes only the `slf4j-api` dependency. It does not provide or configure a logging backend, so debug logging is not shown by default. Applications that use this library control logging through their own SLF4J backend, such as Logback, Log4j 2, JUL, or `slf4j-simple`.
