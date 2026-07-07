@@ -24,10 +24,11 @@ import com.parasoft.coverage.integration.proxy.ParasoftHeaderInjectingProxy;
 import org.openqa.selenium.MutableCapabilities;
 import org.openqa.selenium.Proxy;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.edge.EdgeOptions;
 
 /**
- * Provides Selenium Chrome configuration for the currently executing Parasoft
- * coverage test.
+ * Provides Selenium browser configuration for the currently executing
+ * Parasoft coverage test.
  */
 public final class SeleniumCoverageIntegration
 {
@@ -73,6 +74,44 @@ public final class SeleniumCoverageIntegration
         ParasoftHeaderInjectingProxy proxy = configureChromeOptions(chromeOptions);
 
         return new SeleniumBrowserCoverage(chromeOptions, proxy);
+    }
+
+    /**
+     * Creates Edge options configured with a dedicated Parasoft
+     * header-injecting proxy for one browser session.
+     * <p>
+     * Call this method separately for each browser. The proxy captures the
+     * current test's baggage header when the browser options are created, so
+     * parallel browsers keep independent proxy and baggage state.
+     * </p>
+     *
+     * @return Edge browser coverage handle that must be closed after the browser
+     *         session ends
+     */
+    public static EdgeBrowserCoverage createEdgeBrowserCoverage()
+    {
+        return createEdgeBrowserCoverage(new EdgeOptions());
+    }
+
+    /**
+     * Configures the supplied Edge options with a dedicated Parasoft
+     * header-injecting proxy for one browser session.
+     * <p>
+     * Call this method separately for each browser. The proxy captures the
+     * current test's baggage header when the browser options are configured, so
+     * parallel browsers keep independent proxy and baggage state.
+     * </p>
+     *
+     * @param options Edge options to configure
+     * @return Edge browser coverage handle that must be closed after the browser
+     *         session ends
+     */
+    public static EdgeBrowserCoverage createEdgeBrowserCoverage(EdgeOptions options)
+    {
+        EdgeOptions edgeOptions = requireEdgeOptions(options);
+        ParasoftHeaderInjectingProxy proxy = configureEdgeOptions(edgeOptions);
+
+        return new EdgeBrowserCoverage(edgeOptions, proxy);
     }
 
     /**
@@ -131,6 +170,62 @@ public final class SeleniumCoverageIntegration
         return parasoftProxy;
     }
 
+    /**
+     * Starts a Parasoft header-injecting proxy using the current test's baggage
+     * header and configures the supplied Edge options to use it.
+     *
+     * @param options Edge options to configure
+     * @return proxy handle that must be closed after the browser session ends
+     */
+    public static ParasoftHeaderInjectingProxy configureEdgeOptions(MutableCapabilities options)
+    {
+        requireEdgeOptions(options);
+
+        return configureEdgeOptions(options, new ParasoftHeaderInjectingProxy());
+    }
+
+    /**
+     * Starts a Parasoft header-injecting proxy using a shared baggage reference
+     * and configures the supplied Edge options to use it.
+     *
+     * @param options Edge options to configure
+     * @param baggageHeader shared baggage value to inject, such as
+     *        {@code test-operator-id=userId+parallelId}
+     * @return proxy handle that must be closed after the browser session ends
+     */
+    public static ParasoftHeaderInjectingProxy configureEdgeOptions(MutableCapabilities options,
+            AtomicReference<String> baggageHeader)
+    {
+        requireEdgeOptions(options);
+
+        return configureEdgeOptions(options, new ParasoftHeaderInjectingProxy(baggageHeader));
+    }
+
+    /**
+     * Configures the supplied Edge options to use an existing Parasoft
+     * header-injecting proxy.
+     *
+     * @param options Edge options to configure
+     * @param proxy Parasoft proxy to use
+     * @return the supplied proxy
+     */
+    public static ParasoftHeaderInjectingProxy configureEdgeOptions(MutableCapabilities options,
+            ParasoftHeaderInjectingProxy proxy)
+    {
+        EdgeOptions edgeOptions = requireEdgeOptions(options);
+        ParasoftHeaderInjectingProxy parasoftProxy = Objects.requireNonNull(proxy, "proxy must not be null");
+
+        String proxyAddress = parasoftProxy.getHost() + ":" + parasoftProxy.getPort();
+        Proxy seleniumProxy = new Proxy()
+                .setHttpProxy(proxyAddress)
+                .setSslProxy(proxyAddress)
+                .setNoProxy(LOOPBACK_PROXY_BYPASS);
+
+        edgeOptions.setProxy(seleniumProxy);
+
+        return parasoftProxy;
+    }
+
     private static ChromeOptions requireChromeOptions(MutableCapabilities options)
     {
         Objects.requireNonNull(options, "options must not be null");
@@ -140,6 +235,17 @@ public final class SeleniumCoverageIntegration
         }
 
         throw new IllegalArgumentException("Expected ChromeOptions but got " + options.getClass().getName());
+    }
+
+    private static EdgeOptions requireEdgeOptions(MutableCapabilities options)
+    {
+        Objects.requireNonNull(options, "options must not be null");
+
+        if (options instanceof EdgeOptions edgeOptions) {
+            return edgeOptions;
+        }
+
+        throw new IllegalArgumentException("Expected EdgeOptions but got " + options.getClass().getName());
     }
 
     /**
@@ -163,6 +269,44 @@ public final class SeleniumCoverageIntegration
         public ChromeOptions getChromeOptions()
         {
             return chromeOptions;
+        }
+
+        /**
+         * @return the dedicated Parasoft proxy for this browser session
+         */
+        public ParasoftHeaderInjectingProxy getProxy()
+        {
+            return proxy;
+        }
+
+        @Override
+        public void close()
+        {
+            proxy.close();
+        }
+    }
+
+    /**
+     * Edge browser coverage state for one Selenium browser session.
+     */
+    public static final class EdgeBrowserCoverage
+            implements AutoCloseable
+    {
+        private final EdgeOptions edgeOptions;
+        private final ParasoftHeaderInjectingProxy proxy;
+
+        private EdgeBrowserCoverage(EdgeOptions edgeOptions, ParasoftHeaderInjectingProxy proxy)
+        {
+            this.edgeOptions = edgeOptions;
+            this.proxy = proxy;
+        }
+
+        /**
+         * @return Edge options configured for this browser session
+         */
+        public EdgeOptions getEdgeOptions()
+        {
+            return edgeOptions;
         }
 
         /**
