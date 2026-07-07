@@ -39,6 +39,39 @@ Page page = context.newPage();
 
 The returned options include the current test's `Baggage` header when CTP provides one. In single-user mode, or when no baggage value is available, the returned options contain no additional HTTP headers.
 
+## Selenium
+
+Add the Selenium integration dependency alongside the JUnit integration dependency used by the test project.
+
+```xml
+<dependency>
+    <groupId>com.parasoft</groupId>
+    <artifactId>coverage-integration-selenium</artifactId>
+    <version>${coverage-integration.version}</version>
+    <scope>test</scope>
+</dependency>
+```
+
+Use `SeleniumCoverageIntegration#createChromeBrowserCoverage()` for each browser. The returned handle owns a dedicated proxy for that browser and closes the proxy when the browser session is done.
+
+```java
+import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration;
+import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.SeleniumBrowserCoverage;
+
+try (SeleniumBrowserCoverage coverage = SeleniumCoverageIntegration.createChromeBrowserCoverage()) {
+    WebDriver driver = new ChromeDriver(coverage.getChromeOptions());
+
+    try {
+        // test code
+    }
+    finally {
+        driver.quit();
+    }
+}
+```
+
+When Selenium tests run in parallel, create a separate browser coverage handle inside each test before creating that test's browser. Each handle starts a separate proxy and captures the current test's `Baggage` header for that browser.
+
 ## Javadoc
 
 The API module generates Javadoc as part of the Maven `package` phase:

@@ -38,6 +38,44 @@ public final class SeleniumCoverageIntegration
     }
 
     /**
+     * Creates Chrome options configured with a dedicated Parasoft
+     * header-injecting proxy for one browser session.
+     * <p>
+     * Call this method separately for each browser. The proxy captures the
+     * current test's baggage header when the browser options are created, so
+     * parallel browsers keep independent proxy and baggage state.
+     * </p>
+     *
+     * @return browser coverage handle that must be closed after the browser
+     *         session ends
+     */
+    public static SeleniumBrowserCoverage createChromeBrowserCoverage()
+    {
+        return createChromeBrowserCoverage(new ChromeOptions());
+    }
+
+    /**
+     * Configures the supplied Chrome options with a dedicated Parasoft
+     * header-injecting proxy for one browser session.
+     * <p>
+     * Call this method separately for each browser. The proxy captures the
+     * current test's baggage header when the browser options are configured, so
+     * parallel browsers keep independent proxy and baggage state.
+     * </p>
+     *
+     * @param options Chrome options to configure
+     * @return browser coverage handle that must be closed after the browser
+     *         session ends
+     */
+    public static SeleniumBrowserCoverage createChromeBrowserCoverage(ChromeOptions options)
+    {
+        ChromeOptions chromeOptions = requireChromeOptions(options);
+        ParasoftHeaderInjectingProxy proxy = configureChromeOptions(chromeOptions);
+
+        return new SeleniumBrowserCoverage(chromeOptions, proxy);
+    }
+
+    /**
      * Starts a Parasoft header-injecting proxy using the current test's baggage
      * header and configures the supplied Chrome options to use it.
      *
@@ -102,5 +140,43 @@ public final class SeleniumCoverageIntegration
         }
 
         throw new IllegalArgumentException("Expected ChromeOptions but got " + options.getClass().getName());
+    }
+
+    /**
+     * Chrome browser coverage state for one Selenium browser session.
+     */
+    public static final class SeleniumBrowserCoverage
+            implements AutoCloseable
+    {
+        private final ChromeOptions chromeOptions;
+        private final ParasoftHeaderInjectingProxy proxy;
+
+        private SeleniumBrowserCoverage(ChromeOptions chromeOptions, ParasoftHeaderInjectingProxy proxy)
+        {
+            this.chromeOptions = chromeOptions;
+            this.proxy = proxy;
+        }
+
+        /**
+         * @return Chrome options configured for this browser session
+         */
+        public ChromeOptions getChromeOptions()
+        {
+            return chromeOptions;
+        }
+
+        /**
+         * @return the dedicated Parasoft proxy for this browser session
+         */
+        public ParasoftHeaderInjectingProxy getProxy()
+        {
+            return proxy;
+        }
+
+        @Override
+        public void close()
+        {
+            proxy.close();
+        }
     }
 }
