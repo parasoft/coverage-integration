@@ -26,6 +26,7 @@ import org.openqa.selenium.Proxy;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.edge.EdgeOptions;
 import org.openqa.selenium.firefox.FirefoxOptions;
+import org.openqa.selenium.safari.SafariOptions;
 
 /**
  * Provides Selenium browser configuration for the currently executing
@@ -152,6 +153,44 @@ public final class SeleniumCoverageIntegration
         ParasoftHeaderInjectingProxy proxy = configureFirefoxOptions(firefoxOptions);
 
         return new FirefoxBrowserCoverage(firefoxOptions, proxy);
+    }
+
+    /**
+     * Creates Safari options configured with a dedicated Parasoft
+     * header-injecting proxy for one browser session.
+     * <p>
+     * Call this method separately for each browser. The proxy captures the
+     * current test's baggage header when the browser options are created, so
+     * parallel browsers keep independent proxy and baggage state.
+     * </p>
+     *
+     * @return Safari browser coverage handle that must be closed after the
+     *         browser session ends
+     */
+    public static SafariBrowserCoverage createSafariBrowserCoverage()
+    {
+        return createSafariBrowserCoverage(new SafariOptions());
+    }
+
+    /**
+     * Configures the supplied Safari options with a dedicated Parasoft
+     * header-injecting proxy for one browser session.
+     * <p>
+     * Call this method separately for each browser. The proxy captures the
+     * current test's baggage header when the browser options are configured, so
+     * parallel browsers keep independent proxy and baggage state.
+     * </p>
+     *
+     * @param options Safari options to configure
+     * @return Safari browser coverage handle that must be closed after the
+     *         browser session ends
+     */
+    public static SafariBrowserCoverage createSafariBrowserCoverage(SafariOptions options)
+    {
+        SafariOptions safariOptions = requireSafariOptions(options);
+        ParasoftHeaderInjectingProxy proxy = configureSafariOptions(safariOptions);
+
+        return new SafariBrowserCoverage(safariOptions, proxy);
     }
 
     /**
@@ -305,6 +344,56 @@ public final class SeleniumCoverageIntegration
         return parasoftProxy;
     }
 
+    /**
+     * Starts a Parasoft header-injecting proxy using the current test's baggage
+     * header and configures the supplied Safari options to use it.
+     *
+     * @param options Safari options to configure
+     * @return proxy handle that must be closed after the browser session ends
+     */
+    public static ParasoftHeaderInjectingProxy configureSafariOptions(MutableCapabilities options)
+    {
+        requireSafariOptions(options);
+
+        return configureSafariOptions(options, new ParasoftHeaderInjectingProxy());
+    }
+
+    /**
+     * Starts a Parasoft header-injecting proxy using a shared baggage reference
+     * and configures the supplied Safari options to use it.
+     *
+     * @param options Safari options to configure
+     * @param baggageHeader shared baggage value to inject, such as
+     *        {@code test-operator-id=userId+parallelId}
+     * @return proxy handle that must be closed after the browser session ends
+     */
+    public static ParasoftHeaderInjectingProxy configureSafariOptions(MutableCapabilities options,
+            AtomicReference<String> baggageHeader)
+    {
+        requireSafariOptions(options);
+
+        return configureSafariOptions(options, new ParasoftHeaderInjectingProxy(baggageHeader));
+    }
+
+    /**
+     * Configures the supplied Safari options to use an existing Parasoft
+     * header-injecting proxy.
+     *
+     * @param options Safari options to configure
+     * @param proxy Parasoft proxy to use
+     * @return the supplied proxy
+     */
+    public static ParasoftHeaderInjectingProxy configureSafariOptions(MutableCapabilities options,
+            ParasoftHeaderInjectingProxy proxy)
+    {
+        SafariOptions safariOptions = requireSafariOptions(options);
+        ParasoftHeaderInjectingProxy parasoftProxy = Objects.requireNonNull(proxy, "proxy must not be null");
+
+        safariOptions.setProxy(createSeleniumProxy(parasoftProxy));
+
+        return parasoftProxy;
+    }
+
     private static ChromeOptions requireChromeOptions(MutableCapabilities options)
     {
         Objects.requireNonNull(options, "options must not be null");
@@ -336,6 +425,17 @@ public final class SeleniumCoverageIntegration
         }
 
         throw new IllegalArgumentException("Expected FirefoxOptions but got " + options.getClass().getName());
+    }
+
+    private static SafariOptions requireSafariOptions(MutableCapabilities options)
+    {
+        Objects.requireNonNull(options, "options must not be null");
+
+        if (options instanceof SafariOptions safariOptions) {
+            return safariOptions;
+        }
+
+        throw new IllegalArgumentException("Expected SafariOptions but got " + options.getClass().getName());
     }
 
     private static Proxy createSeleniumProxy(ParasoftHeaderInjectingProxy parasoftProxy)
@@ -450,6 +550,44 @@ public final class SeleniumCoverageIntegration
         public FirefoxOptions getFirefoxOptions()
         {
             return firefoxOptions;
+        }
+
+        /**
+         * @return the dedicated Parasoft proxy for this browser session
+         */
+        public ParasoftHeaderInjectingProxy getProxy()
+        {
+            return proxy;
+        }
+
+        @Override
+        public void close()
+        {
+            proxy.close();
+        }
+    }
+
+    /**
+     * Safari browser coverage state for one Selenium browser session.
+     */
+    public static final class SafariBrowserCoverage
+            implements AutoCloseable
+    {
+        private final SafariOptions safariOptions;
+        private final ParasoftHeaderInjectingProxy proxy;
+
+        private SafariBrowserCoverage(SafariOptions safariOptions, ParasoftHeaderInjectingProxy proxy)
+        {
+            this.safariOptions = safariOptions;
+            this.proxy = proxy;
+        }
+
+        /**
+         * @return Safari options configured for this browser session
+         */
+        public SafariOptions getSafariOptions()
+        {
+            return safariOptions;
         }
 
         /**

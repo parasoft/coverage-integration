@@ -52,7 +52,7 @@ Add the Selenium integration dependency alongside the JUnit integration dependen
 </dependency>
 ```
 
-Use `SeleniumCoverageIntegration#createChromeBrowserCoverage()`, `SeleniumCoverageIntegration#createEdgeBrowserCoverage()`, or `SeleniumCoverageIntegration#createFirefoxBrowserCoverage()` for each browser. The returned handle owns a dedicated proxy for that browser and closes the proxy when the browser session is done.
+Use `SeleniumCoverageIntegration#createChromeBrowserCoverage()`, `SeleniumCoverageIntegration#createEdgeBrowserCoverage()`, `SeleniumCoverageIntegration#createFirefoxBrowserCoverage()`, or `SeleniumCoverageIntegration#createSafariBrowserCoverage()` for each browser. The returned handle owns a dedicated proxy for that browser and closes the proxy when the browser session is done.
 
 ```java
 import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration;
@@ -77,6 +77,23 @@ import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.Fi
 
 try (FirefoxBrowserCoverage coverage = SeleniumCoverageIntegration.createFirefoxBrowserCoverage()) {
     WebDriver driver = new FirefoxDriver(coverage.getFirefoxOptions());
+
+    try {
+        // test code
+    }
+    finally {
+        driver.quit();
+    }
+}
+```
+
+For Safari, use the Safari coverage handle and options:
+
+```java
+import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.SafariBrowserCoverage;
+
+try (SafariBrowserCoverage coverage = SeleniumCoverageIntegration.createSafariBrowserCoverage()) {
+    WebDriver driver = new SafariDriver(coverage.getSafariOptions());
 
     try {
         // test code
