@@ -25,6 +25,7 @@ import org.openqa.selenium.MutableCapabilities;
 import org.openqa.selenium.Proxy;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.edge.EdgeOptions;
+import org.openqa.selenium.firefox.FirefoxOptions;
 
 /**
  * Provides Selenium browser configuration for the currently executing
@@ -33,6 +34,7 @@ import org.openqa.selenium.edge.EdgeOptions;
 public final class SeleniumCoverageIntegration
 {
     private static final String LOOPBACK_PROXY_BYPASS = "<-loopback>";
+    private static final String FIREFOX_ALLOW_HIJACKING_LOCALHOST = "network.proxy.allow_hijacking_localhost";
 
     private SeleniumCoverageIntegration()
     {
@@ -115,6 +117,44 @@ public final class SeleniumCoverageIntegration
     }
 
     /**
+     * Creates Firefox options configured with a dedicated Parasoft
+     * header-injecting proxy for one browser session.
+     * <p>
+     * Call this method separately for each browser. The proxy captures the
+     * current test's baggage header when the browser options are created, so
+     * parallel browsers keep independent proxy and baggage state.
+     * </p>
+     *
+     * @return Firefox browser coverage handle that must be closed after the
+     *         browser session ends
+     */
+    public static FirefoxBrowserCoverage createFirefoxBrowserCoverage()
+    {
+        return createFirefoxBrowserCoverage(new FirefoxOptions());
+    }
+
+    /**
+     * Configures the supplied Firefox options with a dedicated Parasoft
+     * header-injecting proxy for one browser session.
+     * <p>
+     * Call this method separately for each browser. The proxy captures the
+     * current test's baggage header when the browser options are configured, so
+     * parallel browsers keep independent proxy and baggage state.
+     * </p>
+     *
+     * @param options Firefox options to configure
+     * @return Firefox browser coverage handle that must be closed after the
+     *         browser session ends
+     */
+    public static FirefoxBrowserCoverage createFirefoxBrowserCoverage(FirefoxOptions options)
+    {
+        FirefoxOptions firefoxOptions = requireFirefoxOptions(options);
+        ParasoftHeaderInjectingProxy proxy = configureFirefoxOptions(firefoxOptions);
+
+        return new FirefoxBrowserCoverage(firefoxOptions, proxy);
+    }
+
+    /**
      * Starts a Parasoft header-injecting proxy using the current test's baggage
      * header and configures the supplied Chrome options to use it.
      *
@@ -159,13 +199,7 @@ public final class SeleniumCoverageIntegration
         ChromeOptions chromeOptions = requireChromeOptions(options);
         ParasoftHeaderInjectingProxy parasoftProxy = Objects.requireNonNull(proxy, "proxy must not be null");
 
-        String proxyAddress = parasoftProxy.getHost() + ":" + parasoftProxy.getPort();
-        Proxy seleniumProxy = new Proxy()
-                .setHttpProxy(proxyAddress)
-                .setSslProxy(proxyAddress)
-                .setNoProxy(LOOPBACK_PROXY_BYPASS);
-
-        chromeOptions.setProxy(seleniumProxy);
+        chromeOptions.setProxy(createChromiumSeleniumProxy(parasoftProxy));
 
         return parasoftProxy;
     }
@@ -215,13 +249,58 @@ public final class SeleniumCoverageIntegration
         EdgeOptions edgeOptions = requireEdgeOptions(options);
         ParasoftHeaderInjectingProxy parasoftProxy = Objects.requireNonNull(proxy, "proxy must not be null");
 
-        String proxyAddress = parasoftProxy.getHost() + ":" + parasoftProxy.getPort();
-        Proxy seleniumProxy = new Proxy()
-                .setHttpProxy(proxyAddress)
-                .setSslProxy(proxyAddress)
-                .setNoProxy(LOOPBACK_PROXY_BYPASS);
+        edgeOptions.setProxy(createChromiumSeleniumProxy(parasoftProxy));
 
-        edgeOptions.setProxy(seleniumProxy);
+        return parasoftProxy;
+    }
+
+    /**
+     * Starts a Parasoft header-injecting proxy using the current test's baggage
+     * header and configures the supplied Firefox options to use it.
+     *
+     * @param options Firefox options to configure
+     * @return proxy handle that must be closed after the browser session ends
+     */
+    public static ParasoftHeaderInjectingProxy configureFirefoxOptions(MutableCapabilities options)
+    {
+        requireFirefoxOptions(options);
+
+        return configureFirefoxOptions(options, new ParasoftHeaderInjectingProxy());
+    }
+
+    /**
+     * Starts a Parasoft header-injecting proxy using a shared baggage reference
+     * and configures the supplied Firefox options to use it.
+     *
+     * @param options Firefox options to configure
+     * @param baggageHeader shared baggage value to inject, such as
+     *        {@code test-operator-id=userId+parallelId}
+     * @return proxy handle that must be closed after the browser session ends
+     */
+    public static ParasoftHeaderInjectingProxy configureFirefoxOptions(MutableCapabilities options,
+            AtomicReference<String> baggageHeader)
+    {
+        requireFirefoxOptions(options);
+
+        return configureFirefoxOptions(options, new ParasoftHeaderInjectingProxy(baggageHeader));
+    }
+
+    /**
+     * Configures the supplied Firefox options to use an existing Parasoft
+     * header-injecting proxy.
+     *
+     * @param options Firefox options to configure
+     * @param proxy Parasoft proxy to use
+     * @return the supplied proxy
+     */
+    public static ParasoftHeaderInjectingProxy configureFirefoxOptions(MutableCapabilities options,
+            ParasoftHeaderInjectingProxy proxy)
+    {
+        FirefoxOptions firefoxOptions = requireFirefoxOptions(options);
+        ParasoftHeaderInjectingProxy parasoftProxy = Objects.requireNonNull(proxy, "proxy must not be null");
+
+        firefoxOptions.setProxy(createSeleniumProxy(parasoftProxy));
+        firefoxOptions.addPreference(FIREFOX_ALLOW_HIJACKING_LOCALHOST, true);
 
         return parasoftProxy;
     }
@@ -246,6 +325,32 @@ public final class SeleniumCoverageIntegration
         }
 
         throw new IllegalArgumentException("Expected EdgeOptions but got " + options.getClass().getName());
+    }
+
+    private static FirefoxOptions requireFirefoxOptions(MutableCapabilities options)
+    {
+        Objects.requireNonNull(options, "options must not be null");
+
+        if (options instanceof FirefoxOptions firefoxOptions) {
+            return firefoxOptions;
+        }
+
+        throw new IllegalArgumentException("Expected FirefoxOptions but got " + options.getClass().getName());
+    }
+
+    private static Proxy createSeleniumProxy(ParasoftHeaderInjectingProxy parasoftProxy)
+    {
+        String proxyAddress = parasoftProxy.getHost() + ":" + parasoftProxy.getPort();
+
+        return new Proxy()
+                .setHttpProxy(proxyAddress)
+                .setSslProxy(proxyAddress);
+    }
+
+    private static Proxy createChromiumSeleniumProxy(ParasoftHeaderInjectingProxy parasoftProxy)
+    {
+        return createSeleniumProxy(parasoftProxy)
+                .setNoProxy(LOOPBACK_PROXY_BYPASS);
     }
 
     /**
@@ -307,6 +412,44 @@ public final class SeleniumCoverageIntegration
         public EdgeOptions getEdgeOptions()
         {
             return edgeOptions;
+        }
+
+        /**
+         * @return the dedicated Parasoft proxy for this browser session
+         */
+        public ParasoftHeaderInjectingProxy getProxy()
+        {
+            return proxy;
+        }
+
+        @Override
+        public void close()
+        {
+            proxy.close();
+        }
+    }
+
+    /**
+     * Firefox browser coverage state for one Selenium browser session.
+     */
+    public static final class FirefoxBrowserCoverage
+            implements AutoCloseable
+    {
+        private final FirefoxOptions firefoxOptions;
+        private final ParasoftHeaderInjectingProxy proxy;
+
+        private FirefoxBrowserCoverage(FirefoxOptions firefoxOptions, ParasoftHeaderInjectingProxy proxy)
+        {
+            this.firefoxOptions = firefoxOptions;
+            this.proxy = proxy;
+        }
+
+        /**
+         * @return Firefox options configured for this browser session
+         */
+        public FirefoxOptions getFirefoxOptions()
+        {
+            return firefoxOptions;
         }
 
         /**
