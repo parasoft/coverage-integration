@@ -16,6 +16,8 @@
 
 package com.parasoft.coverage.integration.selenium;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -24,6 +26,7 @@ import com.parasoft.coverage.integration.proxy.ParasoftHeaderInjectingProxy;
 import org.openqa.selenium.MutableCapabilities;
 import org.openqa.selenium.Proxy;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.chromium.HasCdp;
 import org.openqa.selenium.edge.EdgeOptions;
 import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.safari.SafariOptions;
@@ -34,8 +37,12 @@ import org.openqa.selenium.safari.SafariOptions;
  */
 public final class SeleniumCoverageIntegration
 {
+    private static final String BAGGAGE_HEADER_NAME = ParasoftHeaderInjectingProxy.BAGGAGE_HEADER_NAME;
     private static final String LOOPBACK_PROXY_BYPASS = "<-loopback>";
     private static final String FIREFOX_ALLOW_HIJACKING_LOCALHOST = "network.proxy.allow_hijacking_localhost";
+    private static final String NETWORK_ENABLE_COMMAND = "Network.enable";
+    private static final String NETWORK_SET_EXTRA_HTTP_HEADERS_COMMAND = "Network.setExtraHTTPHeaders";
+    private static final String HEADERS_PARAMETER_NAME = "headers";
 
     private SeleniumCoverageIntegration()
     {
@@ -191,6 +198,60 @@ public final class SeleniumCoverageIntegration
         ParasoftHeaderInjectingProxy proxy = configureSafariOptions(safariOptions);
 
         return new SafariBrowserCoverage(safariOptions, proxy);
+    }
+
+    /**
+     * Configures a Chrome or Edge browser session to inject the current test's
+     * {@code Baggage} header using Chrome DevTools Protocol instead of a proxy.
+     * <p>
+     * Call this method after creating the {@code WebDriver} session and before
+     * navigating to the application under test. Call it separately for each
+     * browser session used by parallel tests.
+     * </p>
+     *
+     * @param browser Chrome or Edge driver that supports CDP
+     */
+    public static void configureCdpBaggageHeader(HasCdp browser)
+    {
+        configureCdpBaggageHeader(browser, getCurrentTestBaggageHeader());
+    }
+
+    /**
+     * Configures a Chrome or Edge browser session to inject the supplied
+     * {@code Baggage} header using Chrome DevTools Protocol instead of a proxy.
+     * <p>
+     * Passing {@code null} or a blank value clears previously configured extra
+     * HTTP headers for this CDP session.
+     * </p>
+     *
+     * @param browser Chrome or Edge driver that supports CDP
+     * @param baggageHeader baggage value to inject, such as
+     *        {@code test-operator-id=userId+parallelId}
+     */
+    public static void configureCdpBaggageHeader(HasCdp browser, String baggageHeader)
+    {
+        configureCdpHeaders(browser, createCdpBaggageHeaders(baggageHeader));
+    }
+
+    /**
+     * Configures a Chrome or Edge browser session to inject the supplied HTTP
+     * headers using Chrome DevTools Protocol instead of a proxy.
+     * <p>
+     * Passing {@code null} clears previously configured extra HTTP headers for
+     * this CDP session.
+     * </p>
+     *
+     * @param browser Chrome or Edge driver that supports CDP
+     * @param headers HTTP headers to inject
+     */
+    public static void configureCdpHeaders(HasCdp browser, Map<String, String> headers)
+    {
+        HasCdp cdpBrowser = Objects.requireNonNull(browser, "browser must not be null");
+        Map<String, String> extraHeaders = headers == null ? Collections.emptyMap() : Map.copyOf(headers);
+
+        cdpBrowser.executeCdpCommand(NETWORK_ENABLE_COMMAND, Collections.emptyMap());
+        cdpBrowser.executeCdpCommand(NETWORK_SET_EXTRA_HTTP_HEADERS_COMMAND,
+                Map.of(HEADERS_PARAMETER_NAME, extraHeaders));
     }
 
     /**
@@ -451,6 +512,28 @@ public final class SeleniumCoverageIntegration
     {
         return createSeleniumProxy(parasoftProxy)
                 .setNoProxy(LOOPBACK_PROXY_BYPASS);
+    }
+
+    private static Map<String, String> createCdpBaggageHeaders(String baggageHeader)
+    {
+        if (baggageHeader == null || baggageHeader.isBlank()) {
+            return Collections.emptyMap();
+        }
+
+        return Map.of(BAGGAGE_HEADER_NAME, baggageHeader);
+    }
+
+    private static String getCurrentTestBaggageHeader()
+    {
+        try {
+            Class<?> executionContext = Class.forName(
+                    "com.parasoft.coverage.integration.core.internal.CoverageExecutionContext");
+
+            return (String) executionContext.getMethod("getCurrentBaggageHeader").invoke(null);
+        }
+        catch (ReflectiveOperationException e) {
+            return null;
+        }
     }
 
     /**

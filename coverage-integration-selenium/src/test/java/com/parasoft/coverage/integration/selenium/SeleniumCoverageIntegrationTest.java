@@ -23,6 +23,8 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import com.parasoft.coverage.integration.proxy.ParasoftHeaderInjectingProxy;
@@ -36,6 +38,7 @@ import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.Se
 import org.junit.Test;
 import org.openqa.selenium.Proxy;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.chromium.HasCdp;
 import org.openqa.selenium.edge.EdgeOptions;
 import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.safari.SafariOptions;
@@ -75,6 +78,58 @@ public class SeleniumCoverageIntegrationTest
             assertSame(options, browserCoverage.getChromeOptions());
             assertNull(browserCoverage.getProxy().getBaggageHeader());
         }
+    }
+
+    @Test
+    public void configureCdpBaggageHeaderUsesCurrentTestBaggage()
+    {
+        RecordingCdpBrowser browser = new RecordingCdpBrowser();
+
+        try {
+            CoverageExecutionContext.setCurrent(new CoverageTestContext("parallel-1", "baggage-one"));
+
+            SeleniumCoverageIntegration.configureCdpBaggageHeader(browser);
+
+            assertCdpBaggageCommands(browser, "baggage-one");
+        }
+        finally {
+            CoverageExecutionContext.clearCurrent();
+        }
+    }
+
+    @Test
+    public void configureCdpBaggageHeaderUsesSuppliedBaggage()
+    {
+        RecordingCdpBrowser browser = new RecordingCdpBrowser();
+
+        SeleniumCoverageIntegration.configureCdpBaggageHeader(browser, "baggage-two");
+
+        assertCdpBaggageCommands(browser, "baggage-two");
+    }
+
+    @Test
+    public void configureCdpBaggageHeaderClearsHeadersWhenBaggageIsBlank()
+    {
+        RecordingCdpBrowser browser = new RecordingCdpBrowser();
+
+        SeleniumCoverageIntegration.configureCdpBaggageHeader(browser, " ");
+
+        assertEquals("Network.enable", browser.commandNames.get(0));
+        assertEquals("Network.setExtraHTTPHeaders", browser.commandNames.get(1));
+        assertEquals(Map.of(), browser.commandParameters.get(1).get("headers"));
+    }
+
+    @Test
+    public void configureCdpHeadersUsesSuppliedHeaders()
+    {
+        RecordingCdpBrowser browser = new RecordingCdpBrowser();
+
+        SeleniumCoverageIntegration.configureCdpHeaders(browser,
+                Map.of("Baggage", "baggage-three", "X-Test", "value"));
+
+        assertEquals(List.of("Network.enable", "Network.setExtraHTTPHeaders"), browser.commandNames);
+        assertEquals(Map.of("Baggage", "baggage-three", "X-Test", "value"),
+                browser.commandParameters.get(1).get("headers"));
     }
 
     @Test
@@ -198,6 +253,16 @@ public class SeleniumCoverageIntegrationTest
         assertEquals("<-loopback>", seleniumProxy.getNoProxy());
     }
 
+    @SuppressWarnings("unchecked")
+    private static void assertCdpBaggageCommands(RecordingCdpBrowser browser, String baggageHeader)
+    {
+        assertEquals(List.of("Network.enable", "Network.setExtraHTTPHeaders"), browser.commandNames);
+        assertEquals(Map.of(), browser.commandParameters.get(0));
+
+        Map<String, String> headers = (Map<String, String>) browser.commandParameters.get(1).get("headers");
+        assertEquals(Map.of("Baggage", baggageHeader), headers);
+    }
+
     private static void assertProxy(ParasoftHeaderInjectingProxy proxy, Proxy seleniumProxy)
     {
         assertNotNull(seleniumProxy);
@@ -215,5 +280,21 @@ public class SeleniumCoverageIntegrationTest
         Map<String, Object> preferences = (Map<String, Object>) firefoxOptions.get("prefs");
 
         assertEquals(expectedValue, preferences.get(name));
+    }
+
+    private static final class RecordingCdpBrowser
+            implements HasCdp
+    {
+        private final List<String> commandNames = new ArrayList<>();
+        private final List<Map<String, Object>> commandParameters = new ArrayList<>();
+
+        @Override
+        public Map<String, Object> executeCdpCommand(String commandName, Map<String, Object> parameters)
+        {
+            commandNames.add(commandName);
+            commandParameters.add(parameters);
+
+            return Map.of();
+        }
     }
 }

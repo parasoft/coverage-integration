@@ -106,6 +106,19 @@ try (SafariBrowserCoverage coverage = SeleniumCoverageIntegration.createSafariBr
 
 When Selenium tests run in parallel, create a separate browser coverage handle inside each test before creating that test's browser. Each handle starts a separate proxy and captures the current test's `Baggage` header for that browser.
 
+Chrome and Edge can use Chrome DevTools Protocol instead of a proxy. Create the driver normally, then configure the current test's `Baggage` header before navigating to the application under test.
+
+```java
+import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration;
+
+ChromeDriver driver = new ChromeDriver();
+SeleniumCoverageIntegration.configureCdpBaggageHeader(driver);
+```
+
+To set explicit headers instead, use `configureCdpHeaders(driver, headers)`.
+
+Call `configureCdpBaggageHeader` separately for each Chrome or Edge browser session used by parallel tests. Firefox and Safari do not support this CDP path; use `createFirefoxBrowserCoverage()` or `createSafariBrowserCoverage()` for those browsers.
+
 ## Javadoc
 
 The API module generates Javadoc as part of the Maven `package` phase:
