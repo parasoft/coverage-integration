@@ -59,7 +59,7 @@ public class ParasoftJUnit6Extension implements BeforeEachCallback, TestWatcher
     @Override
     public void beforeEach(ExtensionContext context)
     {
-        String testId = context.getRequiredTestClass().getName();
+        String testId = getTestId(context);
         String testCaseId = context.getRequiredTestMethod().getName();
         String executionKey = context.getUniqueId();
         TestExecution execution = new TestExecution(testId, testCaseId);
@@ -80,6 +80,11 @@ public class ParasoftJUnit6Extension implements BeforeEachCallback, TestWatcher
             CoverageExecutionContext.clearCurrent();
             throw e;
         }
+    }
+
+    private static String getTestId(ExtensionContext context)
+    {
+        return context.getRequiredTestClass().getName() + '#' + context.getRequiredTestMethod().getName();
     }
 
     @Override

@@ -59,11 +59,11 @@ class ParasoftCoverageApiClientTest
     private static final String BAGGAGE_HEADER = "test-operator-id=automation-user+parallel-id";
     private static final String FAILURE_MESSAGE = "expected 4 but was 5";
 
-    private static final String SESSION_START_PATH = "/v3/environments/42/agents/session/start";
-    private static final String TEST_START_PATH = "/v3/environments/42/agents/test/start";
-    private static final String TEST_STOP_PATH = "/v3/environments/42/agents/test/stop";
-    private static final String SESSION_STOP_PATH = "/v3/environments/42/agents/session/stop";
-    private static final String COVERAGE_PATH = "/v3/environments/42/coverage/" + SESSION_ID;
+    private static final String SESSION_START_PATH = "/api/v3/environments/42/agents/session/start";
+    private static final String TEST_START_PATH = "/api/v3/environments/42/agents/test/start";
+    private static final String TEST_STOP_PATH = "/api/v3/environments/42/agents/test/stop";
+    private static final String SESSION_STOP_PATH = "/api/v3/environments/42/agents/session/stop";
+    private static final String COVERAGE_PATH = "/api/v3/environments/42/coverage/" + SESSION_ID;
 
     private static final String SESSION_STATUS_RESPONSE = """
             {
@@ -233,6 +233,27 @@ class ParasoftCoverageApiClientTest
     }
 
     @Test
+    void appendsApiPathAndRemovesTrailingSlashFromCtpUrl()
+    {
+        String path = "/em/api/v3/environments/42/agents/session/start";
+        WIREMOCK.stubFor(post(urlEqualTo(path))
+                .willReturn(okJson(SESSION_STATUS_RESPONSE)));
+
+        ParasoftCoverageApiClient client = new ParasoftCoverageApiClient(
+                "http://localhost:" + WIREMOCK.getRuntimeInfo().getHttpPort() + "/em/",
+                ENVIRONMENT_ID,
+                USER_ID,
+                SESSION_TAG,
+                false,
+                "admin",
+                "secret",
+                null);
+
+        assertEquals(SESSION_ID, client.startSession());
+        WIREMOCK.verify(1, postRequestedFor(urlEqualTo(path)));
+    }
+
+    @Test
     void prefersBearerAuthenticationWhenBearerAndBasicCredentialsAreConfigured()
     {
         WIREMOCK.stubFor(post(urlEqualTo(SESSION_START_PATH))
@@ -320,7 +341,7 @@ class ParasoftCoverageApiClientTest
         ParasoftCoverageApiClient client =
                 new ParasoftCoverageApiClient(
                         "http://localhost:"
-                                + WIREMOCK.getRuntimeInfo().getHttpPort(),
+                                + WIREMOCK.getRuntimeInfo().getHttpPort() + "/api/",
                         ENVIRONMENT_ID,
                         null,
                         SESSION_TAG,
@@ -424,7 +445,7 @@ class ParasoftCoverageApiClientTest
         ParasoftCoverageApiClient client =
                 new ParasoftCoverageApiClient(
                         "http://localhost:"
-                                + WIREMOCK.getRuntimeInfo().getHttpPort(),
+                                + WIREMOCK.getRuntimeInfo().getHttpPort() + "/api/",
                         ENVIRONMENT_ID,
                         null,
                         null,
@@ -456,6 +477,28 @@ class ParasoftCoverageApiClientTest
         WIREMOCK.verify(
                 0,
                 getRequestedFor(urlPathEqualTo(COVERAGE_PATH)));
+    }
+
+    @Test
+    void usesConfiguredUserIdWhenPublishUserIdIsNotProvided()
+    {
+        WIREMOCK.stubFor(post(urlPathEqualTo(COVERAGE_PATH))
+                .willReturn(aResponse().withStatus(500)));
+
+        ParasoftCoverageApiClient client = createClient(
+                false,
+                null,
+                null,
+                BEARER_TOKEN);
+
+        assertDoesNotThrow(() -> client.publishResults(
+                SESSION_ID,
+                null,
+                null,
+                null));
+
+        WIREMOCK.verify(1, postRequestedFor(urlPathEqualTo(COVERAGE_PATH))
+                .withQueryParam("userId", equalTo(USER_ID)));
     }
 
     @Test
@@ -849,7 +892,7 @@ class ParasoftCoverageApiClientTest
             String token)
     {
         return new ParasoftCoverageApiClient(
-                "http://localhost:" + WIREMOCK.getRuntimeInfo().getHttpPort(),
+                "http://localhost:" + WIREMOCK.getRuntimeInfo().getHttpPort() + "/api/",
                 ENVIRONMENT_ID,
                 USER_ID,
                 SESSION_TAG,

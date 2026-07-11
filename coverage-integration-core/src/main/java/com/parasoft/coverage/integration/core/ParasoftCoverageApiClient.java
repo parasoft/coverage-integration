@@ -16,6 +16,7 @@
 
 package com.parasoft.coverage.integration.core;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import okhttp3.Credentials;
@@ -75,9 +76,18 @@ public class ParasoftCoverageApiClient
                 return chain.proceed(request);
             });
         } else if (username != null && !username.isBlank()) {
-            LOGGER.info("Configuring Parasoft coverage API client with basic authentication for user '{}'", username);
+            boolean passwordConfigured = password != null && !password.isEmpty();
+            LOGGER.info(
+                    "Configuring Parasoft coverage API client with basic authentication: user='{}', passwordConfigured={}",
+                    username,
+                    passwordConfigured);
             final String credentials = Credentials.basic(username, password != null ? password : "");
             httpClientBuilder.addInterceptor(chain -> {
+                LOGGER.info(
+                        "Sending {} {} with Basic authentication for user '{}' (Authorization value redacted)",
+                        chain.request().method(),
+                        chain.request().url(),
+                        username);
                 Request request = chain.request().newBuilder()
                         .header("Authorization", credentials)
                         .build();
@@ -88,7 +98,7 @@ public class ParasoftCoverageApiClient
         }
 
         ApiClient apiClient = new ApiClient(httpClientBuilder.build());
-        apiClient.setBasePath(ctpBaseUrl);
+        apiClient.setBasePath(toApiBaseUrl(ctpBaseUrl));
 
         this.agentsApi = new AgentsApi(apiClient);
         this.coverageApi = new CoverageApi(apiClient);
@@ -100,10 +110,20 @@ public class ParasoftCoverageApiClient
         LOGGER.info("Configured Parasoft coverage API client for environment {}", environmentId);
     }
 
+    private static String toApiBaseUrl(String ctpBaseUrl)
+    {
+        String normalized = Objects.requireNonNull(ctpBaseUrl, "ctpBaseUrl must not be null")
+                .replaceFirst("/+$", "");
+        return normalized.endsWith("/api") ? normalized : normalized + "/api";
+    }
+
     @Override
     public String startSession()
     {
-        LOGGER.info("Starting Parasoft coverage session for environment {}", environmentId);
+        LOGGER.info(
+                "Starting Parasoft coverage session for environment {} with userId='{}'",
+                environmentId,
+                userId);
         try {
             AgentSessionStartModelV3 sessionStart = new AgentSessionStartModelV3();
             sessionStart.setUserId(userId);
@@ -189,11 +209,12 @@ public class ParasoftCoverageApiClient
     public void publishResults(String sessionId, String testConfig, String userId, String toolName)
     {
         try {
+            String effectiveUserId = userId != null ? userId : this.userId;
             CoverageUploadRequestModelV3 uploadRequest = new CoverageUploadRequestModelV3();
             uploadRequest.setSessionTag(sessionTag);
             uploadRequest.setAnalysisType(AnalysisTypeEnum.UNIT_TEST);
 
-            coverageApi.uploadCoverage(environmentId, sessionId, testConfig, userId, toolName, true, uploadRequest);
+            coverageApi.uploadCoverage(environmentId, sessionId, testConfig, effectiveUserId, toolName, true, uploadRequest);
             pollPublishStatus(sessionId);
         }
         catch (ApiException e) {

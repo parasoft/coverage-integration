@@ -55,7 +55,7 @@ public class ParasoftJUnit4Watcher extends TestWatcher
     protected void starting(Description description)
     {
         ParasoftJUnit4Lifecycle.startSessionFromWatcherFallback(coverageApiClient);
-        TestExecution execution = new TestExecution(description.getClassName(), description.getMethodName());
+        TestExecution execution = new TestExecution(getTestId(description), description.getMethodName());
 
         currentTest.set(execution);
 
@@ -72,6 +72,11 @@ public class ParasoftJUnit4Watcher extends TestWatcher
             CoverageExecutionContext.clearCurrent();
             throw e;
         }
+    }
+
+    private static String getTestId(Description description)
+    {
+        return description.getClassName() + '#' + description.getMethodName();
     }
 
     @Override
