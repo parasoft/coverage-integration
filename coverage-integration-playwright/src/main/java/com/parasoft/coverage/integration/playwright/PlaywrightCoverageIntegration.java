@@ -18,6 +18,8 @@ package com.parasoft.coverage.integration.playwright;
 
 import java.util.Map;
 
+import org.slf4j.Logger;
+
 import com.microsoft.playwright.Browser;
 import com.parasoft.coverage.integration.core.internal.CoverageExecutionContext;
 
@@ -27,6 +29,7 @@ import com.parasoft.coverage.integration.core.internal.CoverageExecutionContext;
  */
 public final class PlaywrightCoverageIntegration
 {
+    private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger(PlaywrightCoverageIntegration.class);
     private static final String BAGGAGE_HEADER_NAME = "Baggage";
 
     private PlaywrightCoverageIntegration()
@@ -49,6 +52,7 @@ public final class PlaywrightCoverageIntegration
         String baggageHeader = CoverageExecutionContext.getCurrentBaggageHeader();
 
         if (baggageHeader != null && !baggageHeader.isBlank()) {
+            LOGGER.info("Setting Baggage header for Playwright browser context: {}", baggageHeader);
             options.setExtraHTTPHeaders(Map.of(BAGGAGE_HEADER_NAME, baggageHeader));
         }
 
