@@ -21,6 +21,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 
 import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.APIRequest.NewContextOptions;
 import com.parasoft.coverage.integration.core.internal.CoverageExecutionContext;
 
 /**
@@ -57,5 +58,24 @@ public final class PlaywrightCoverageIntegration
         }
 
         return options;
+    }
+
+    /**
+     * Updates the given Playwright browser context options with the Baggage header
+     * returned by CTP for the currently executing test.
+     * <p>
+     * When the current test has no baggage value, such as in single-user mode,
+     * the options remain unchanged.
+     * </p>
+     *
+     * @param options the Playwright browser context options to update
+     */
+    public static void updateBrowserContextOptions(NewContextOptions options)
+    {
+        String baggageHeader = CoverageExecutionContext.getCurrentBaggageHeader();
+        if (baggageHeader != null && !baggageHeader.isBlank()) {
+            LOGGER.info("Setting Baggage header for Playwright browser context: {}", baggageHeader);
+            options.setExtraHTTPHeaders(Map.of(BAGGAGE_HEADER_NAME, baggageHeader));
+        }
     }
 }
