@@ -22,6 +22,8 @@ import java.net.UnknownHostException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.parasoft.coverage.integration.core.internal.CoverageExecutionContext;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
@@ -216,15 +218,6 @@ public final class ParasoftHeaderInjectingProxy
 
     private static String getCurrentTestBaggageHeader()
     {
-        try {
-            Class<?> executionContext = Class.forName(
-                    "com.parasoft.coverage.integration.core.internal.CoverageExecutionContext");
-
-            return (String) executionContext.getMethod("getCurrentBaggageHeader").invoke(null);
-        }
-        catch (ReflectiveOperationException e) {
-            LOGGER.debug("No current Parasoft coverage baggage header is available", e);
-            return null;
-        }
+        return CoverageExecutionContext.getCurrentBaggageHeader();
     }
 }
