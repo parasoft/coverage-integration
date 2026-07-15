@@ -20,8 +20,11 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.parasoft.coverage.integration.proxy.ParasoftHeaderInjectingProxy;
+import com.parasoft.coverage.integration.core.internal.CoverageExecutionContext;
 
 import org.openqa.selenium.MutableCapabilities;
 import org.openqa.selenium.Proxy;
@@ -43,6 +46,8 @@ public final class SeleniumCoverageIntegration
     private static final String NETWORK_ENABLE_COMMAND = "Network.enable";
     private static final String NETWORK_SET_EXTRA_HTTP_HEADERS_COMMAND = "Network.setExtraHTTPHeaders";
     private static final String HEADERS_PARAMETER_NAME = "headers";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SeleniumCoverageIntegration.class);
 
     private SeleniumCoverageIntegration()
     {
@@ -213,7 +218,7 @@ public final class SeleniumCoverageIntegration
      */
     public static void configureCdpBaggageHeader(HasCdp browser)
     {
-        configureCdpBaggageHeader(browser, getCurrentTestBaggageHeader());
+        configureCdpBaggageHeader(browser, CoverageExecutionContext.getCurrentBaggageHeader());
     }
 
     /**
@@ -521,19 +526,6 @@ public final class SeleniumCoverageIntegration
         }
 
         return Map.of(BAGGAGE_HEADER_NAME, baggageHeader);
-    }
-
-    private static String getCurrentTestBaggageHeader()
-    {
-        try {
-            Class<?> executionContext = Class.forName(
-                    "com.parasoft.coverage.integration.core.internal.CoverageExecutionContext");
-
-            return (String) executionContext.getMethod("getCurrentBaggageHeader").invoke(null);
-        }
-        catch (ReflectiveOperationException e) {
-            return null;
-        }
     }
 
     /**

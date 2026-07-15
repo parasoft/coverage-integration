@@ -10,20 +10,9 @@
         <version>0.0.1</version>
     </parent>
 
-    <artifactId>coverage-integration-selenium</artifactId>
+    <artifactId>coverage-integration-testng</artifactId>
 
     <dependencies>
-        <dependency>
-            <groupId>com.parasoft</groupId>
-            <artifactId>coverage-integration-proxy</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.seleniumhq.selenium</groupId>
-            <artifactId>selenium-java</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>com.parasoft</groupId>
             <artifactId>coverage-integration-core</artifactId>
@@ -31,9 +20,9 @@
         </dependency>
 
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
