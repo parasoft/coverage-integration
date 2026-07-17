@@ -1,6 +1,6 @@
 # Coverage Integration
 
-Coverage Integration reports JUnit test execution events to Parasoft CTP.
+Coverage Integration reports test execution events to Parasoft CTP.
 
 ## API
 
@@ -12,7 +12,7 @@ For rare standalone use cases, such as tests launched from a `main` method, use 
 
 ## Playwright
 
-Add the Playwright integration dependency alongside the JUnit integration dependency used by the test project.
+Add the Playwright integration dependency alongside the Cucumber, JUnit, or TestNG integration dependency used by the test project.
 
 ```xml
 <dependency>
@@ -41,7 +41,7 @@ The returned options include the current test's `Baggage` header when CTP provid
 
 ## Selenium
 
-Add the Selenium integration dependency alongside the JUnit integration dependency used by the test project.
+Add the Selenium integration dependency alongside the Cucumber, JUnit, or TestNG integration dependency used by the test project.
 
 ```xml
 <dependency>
@@ -153,6 +153,401 @@ parasoft.coverage.integration.ctp.auth.password=${env_var:PASSWORD}
 parasoft.coverage.integration.ctp.auth.token=<bearer token>
 ```
 Place this file on your project's classpath, for example in src/test/resources.
+
+## Cucumber
+
+Use `coverage-integration-cucumber` to report Cucumber 7.x scenario results and coverage through Parasoft CTP. After the integration is configured, each Cucumber scenario is reported to DTP using the scenario name as the test case name.
+
+Before running the tests, configure a CTP environment with the coverage agents for the application under test.
+
+### Required setup
+
+#### 1. Add the Cucumber integration dependency
+
+Add the following dependency to the Maven module that runs the Cucumber tests:
+
+```xml
+<dependency>
+    <groupId>com.parasoft</groupId>
+    <artifactId>coverage-integration-cucumber</artifactId>
+    <version>${coverage-integration.version}</version>
+    <scope>test</scope>
+</dependency>
+```
+
+Keep the Cucumber dependencies already required by the project, including `cucumber-java` and the runner used by the test suite, such as `cucumber-junit`, `cucumber-junit-platform-engine`, or `cucumber-testng`.
+
+Do not add `coverage-integration-junit4`, `coverage-integration-junit5`, `coverage-integration-junit6`, or `coverage-integration-testng` to the same Cucumber test run. The Cucumber integration manages the coverage lifecycle for that run.
+
+#### 2. Configure the CTP connection
+
+Create this file in the test resources:
+
+```text
+src/test/resources/coverage-integration.properties
+```
+
+At minimum, configure the CTP URL and the environment containing the coverage agents:
+
+```properties
+parasoft.coverage.integration.ctp.url=http://localhost:8080/em/
+parasoft.coverage.integration.ctp.envId=1
+```
+
+When CTP uses basic authentication, add:
+
+```properties
+parasoft.coverage.integration.ctp.auth.username=admin
+parasoft.coverage.integration.ctp.auth.password=${env_var:CTP_PASSWORD}
+```
+
+When CTP uses OIDC authentication, configure a bearer token instead:
+
+```properties
+parasoft.coverage.integration.ctp.auth.token=${env_var:CTP_TOKEN}
+```
+
+The properties can also be supplied as Java system properties. A system property overrides the value in `coverage-integration.properties`.
+
+#### 3. Add the Parasoft package to the Cucumber glue
+
+Add `com.parasoft.coverage.integration.cucumber` alongside the project's existing step-definition packages.
+
+Replace `com.example.steps` and `features` in the following examples with the packages and feature location used by the project.
+
+##### JUnit 4
+
+```java
+import org.junit.runner.RunWith;
+
+import io.cucumber.junit.Cucumber;
+import io.cucumber.junit.CucumberOptions;
+
+@RunWith(Cucumber.class)
+@CucumberOptions(
+        features = "classpath:features",
+        glue = {
+                "com.example.steps",
+                "com.parasoft.coverage.integration.cucumber"
+        })
+public class RunCucumberTest
+{
+}
+```
+
+##### JUnit Platform with JUnit 5 or JUnit 6
+
+```java
+import static io.cucumber.junit.platform.engine.Constants.GLUE_PROPERTY_NAME;
+
+import org.junit.platform.suite.api.ConfigurationParameter;
+import org.junit.platform.suite.api.IncludeEngines;
+import org.junit.platform.suite.api.SelectClasspathResource;
+import org.junit.platform.suite.api.Suite;
+
+@Suite
+@IncludeEngines("cucumber")
+@SelectClasspathResource("features")
+@ConfigurationParameter(
+        key = GLUE_PROPERTY_NAME,
+        value = "com.example.steps,"
+                + "com.parasoft.coverage.integration.cucumber")
+public class RunCucumberTest
+{
+}
+```
+
+##### TestNG
+
+```java
+import io.cucumber.testng.AbstractTestNGCucumberTests;
+import io.cucumber.testng.CucumberOptions;
+
+@CucumberOptions(
+        features = "classpath:features",
+        glue = {
+                "com.example.steps",
+                "com.parasoft.coverage.integration.cucumber"
+        })
+public class RunCucumberTest
+        extends AbstractTestNGCucumberTests
+{
+}
+```
+
+#### 4. Run the Cucumber tests
+
+Run the same Maven phase already used by the project, for example:
+
+```shell
+mvn test
+```
+
+or, when the Cucumber tests run through Maven Failsafe:
+
+```shell
+mvn verify
+```
+
+No explicit CTP REST API calls are required in the test code. The integration starts the coverage session, reports each scenario, and publishes the results when the Cucumber run finishes.
+
+For a scenario named `Add a new pet` in `petclinic.feature`, the integration reports these identifiers to CTP:
+
+```text
+test=petclinic.feature#Add a new pet
+testCase=Add a new pet
+```
+
+The scenario name is therefore displayed as the test case name, while the feature file remains part of the test identifier to distinguish scenarios from different feature files.
+
+### Headless Selenium execution
+
+Headless mode is configured through Selenium browser options; it is not a `coverage-integration` property. Configure the browser options before passing them to the Selenium coverage integration.
+
+The following example starts Chrome in headless mode while preserving the current Cucumber scenario's coverage baggage:
+
+```java
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+
+import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration;
+import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.SeleniumBrowserCoverage;
+
+ChromeOptions options = new ChromeOptions();
+options.addArguments("--headless=new");
+
+try (SeleniumBrowserCoverage coverage =
+        SeleniumCoverageIntegration.createChromeBrowserCoverage(options)) {
+    WebDriver driver =
+            new ChromeDriver(coverage.getChromeOptions());
+
+    try {
+        // scenario browser steps
+    }
+    finally {
+        driver.quit();
+    }
+}
+```
+
+A project can expose its own Maven system property to choose between headed and headless execution:
+
+```java
+if (Boolean.getBoolean("HEADLESS")) {
+    options.addArguments("--headless=new");
+}
+```
+
+Then run:
+
+```shell
+mvn test -DHEADLESS=true
+```
+
+`HEADLESS` in this example is a project-defined property. The coverage integration does not interpret it directly.
+
+### Optional: DTP session tag
+
+To associate the published results with a DTP session tag, add:
+
+```properties
+parasoft.coverage.integration.dtp.sessionTag=cucumber-tests
+```
+
+### Multi-user and parallel coverage
+
+The basic Cucumber integration works without multi-user mode or parallel execution. Use the configuration in this section when CTP must distinguish concurrent scenarios for the same test operator and associate browser or HTTP traffic with the correct scenario.
+
+#### Configure multi-user coverage
+
+Configure the test operator ID expected by coverage agents running in multi-user mode:
+
+```properties
+parasoft.coverage.integration.ctp.userId=automation-user
+```
+
+Do not configure this property when the coverage agents run in single-user mode.
+
+#### Configure parallel execution and coverage correlation
+
+Parallel scenario execution and parallel coverage correlation are separate concerns:
+
+- the Cucumber runner or Maven test plugin schedules tests concurrently;
+- `parasoft.coverage.integration.parallel.test.enabled=true` generates a unique `parallelId` for each scenario and sends it to CTP.
+
+After multi-user coverage is configured, a project that already runs Cucumber tests in parallel does not need an additional Cucumber setting; enable the Parasoft parallel-ID property below. Enabling Parasoft parallel IDs does not make sequential tests execute concurrently.
+
+Add this property to `coverage-integration.properties`:
+
+```properties
+parasoft.coverage.integration.parallel.test.enabled=true
+```
+
+Parallel coverage IDs require multi-user coverage and a configured `parasoft.coverage.integration.ctp.userId`.
+
+Enable concurrency through the configuration used by the project's Cucumber runner.
+
+##### JUnit Platform with JUnit 5 or JUnit 6
+
+Enable Cucumber parallel execution in `src/test/resources/junit-platform.properties`:
+
+```properties
+cucumber.execution.parallel.enabled=true
+```
+
+A fixed four-thread configuration can be used when a deterministic thread count is required:
+
+```properties
+cucumber.execution.parallel.enabled=true
+cucumber.execution.parallel.config.strategy=fixed
+cucumber.execution.parallel.config.fixed.parallelism=4
+cucumber.execution.parallel.config.fixed.max-pool-size=4
+```
+
+The basic parallel settings can instead be supplied as Java system properties:
+
+```shell
+mvn test \
+  -Dparasoft.coverage.integration.parallel.test.enabled=true \
+  -Dcucumber.execution.parallel.enabled=true
+```
+
+##### JUnit 4
+
+Configure parallel execution through Maven Surefire or Failsafe. With the JUnit 4 Cucumber runner, feature files are scheduled in parallel and the scenarios in one feature file remain on the same thread.
+
+For example:
+
+```xml
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <configuration>
+        <parallel>methods</parallel>
+        <threadCount>4</threadCount>
+        <perCoreThreadCount>false</perCoreThreadCount>
+    </configuration>
+</plugin>
+```
+
+##### TestNG
+
+Override the Cucumber data provider and enable its parallel mode:
+
+```java
+import org.testng.annotations.DataProvider;
+
+@Override
+@DataProvider(parallel = true)
+public Object[][] scenarios()
+{
+    return super.scenarios();
+}
+```
+
+Each concurrent scenario must use isolated test, browser, and application data. Serialize scenarios that modify the same external resource.
+
+#### Propagate the coverage baggage header
+
+When a test starts with a `userId` and `parallelId`, CTP returns a baggage value with this format:
+
+```text
+test-operator-id=<userId>+<parallelId>
+```
+
+Requests to the instrumented application must send that value in the HTTP `Baggage` header so the coverage agent can associate execution with the correct scenario.
+
+##### Selenium
+
+Add the Selenium integration dependency:
+
+```xml
+<dependency>
+    <groupId>com.parasoft</groupId>
+    <artifactId>coverage-integration-selenium</artifactId>
+    <version>${coverage-integration.version}</version>
+    <scope>test</scope>
+</dependency>
+```
+
+Create a separate browser coverage handle inside each scenario before creating that scenario's browser:
+
+```java
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+
+import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration;
+import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.SeleniumBrowserCoverage;
+
+try (SeleniumBrowserCoverage coverage =
+        SeleniumCoverageIntegration.createChromeBrowserCoverage()) {
+    WebDriver driver =
+            new ChromeDriver(coverage.getChromeOptions());
+
+    try {
+        // scenario browser steps
+    }
+    finally {
+        driver.quit();
+    }
+}
+```
+
+Each handle uses a dedicated proxy and captures the baggage for the current scenario. Equivalent handles are available for Edge, Firefox, and Safari. Chrome and Edge can alternatively use `SeleniumCoverageIntegration.configureCdpBaggageHeader(driver)` after driver creation and before navigation.
+
+##### Playwright
+
+Add the Playwright integration dependency:
+
+```xml
+<dependency>
+    <groupId>com.parasoft</groupId>
+    <artifactId>coverage-integration-playwright</artifactId>
+    <version>${coverage-integration.version}</version>
+    <scope>test</scope>
+</dependency>
+```
+
+Create each browser context with the current scenario's baggage:
+
+```java
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserContext;
+import com.parasoft.coverage.integration.playwright.PlaywrightCoverageIntegration;
+
+Browser.NewContextOptions contextOptions =
+        PlaywrightCoverageIntegration.createBrowserContextOptions();
+
+BrowserContext context =
+        browser.newContext(contextOptions);
+```
+
+Create a separate browser context for each concurrent scenario.
+
+##### Custom HTTP clients
+
+For a custom HTTP client, add the API dependency:
+
+```xml
+<dependency>
+    <groupId>com.parasoft</groupId>
+    <artifactId>coverage-integration-api</artifactId>
+    <version>${coverage-integration.version}</version>
+    <scope>test</scope>
+</dependency>
+```
+
+Then retrieve the current scenario's baggage value:
+
+```java
+import com.parasoft.coverage.integration.api.CoverageIntegration;
+
+String baggageHeader =
+        CoverageIntegration.getBaggageHeader();
+```
+
+When the returned value is not `null`, send it as the HTTP `Baggage` header on requests to the application under test.
 
 ## JUnit 5 and 6
 Add the Maven dependency that matches the version of JUnit used by your project. The example below demonstrates the dependency for JUnit 5.
