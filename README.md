@@ -291,6 +291,8 @@ mvn verify
 
 No explicit CTP REST API calls are required in the test code. The integration starts the coverage session, reports each scenario, and publishes the results when the Cucumber run finishes.
 
+The Parasoft hooks start coverage before user-defined setup hooks and stop coverage after user-defined cleanup hooks. This keeps the scenario coverage context available throughout setup, scenario execution, and cleanup. Application requests must still propagate the current `Baggage` header using the Selenium, Playwright, or custom HTTP client approach described below.
+
 For a scenario named `Add a new pet` in `petclinic.feature`, the integration reports these identifiers to CTP:
 
 ```text
@@ -298,7 +300,7 @@ test=petclinic.feature#Add a new pet
 testCase=Add a new pet
 ```
 
-The scenario name is therefore displayed as the test case name, while the feature file remains part of the test identifier to distinguish scenarios from different feature files.
+The scenario name is therefore displayed as the test case name, while the feature file name remains part of the test identifier to help distinguish scenarios from different feature files.
 
 ### Headless Selenium execution
 
@@ -331,21 +333,7 @@ try (SeleniumBrowserCoverage coverage =
 }
 ```
 
-A project can expose its own Maven system property to choose between headed and headless execution:
-
-```java
-if (Boolean.getBoolean("HEADLESS")) {
-    options.addArguments("--headless=new");
-}
-```
-
-Then run:
-
-```shell
-mvn test -DHEADLESS=true
-```
-
-`HEADLESS` in this example is a project-defined property. The coverage integration does not interpret it directly.
+The application test project controls whether the browser runs headed or headless by configuring `ChromeOptions` before passing them to `SeleniumCoverageIntegration`. The coverage integration does not define or read a headless system property.
 
 ### Optional: DTP session tag
 
@@ -571,7 +559,7 @@ Enable JUnit extension auto-detection by setting the following system property w
 ## JUnit 4
 
 JUnit 4 users should add the JUnit 4 integration dependency and register the run listener in Maven Surefire. The listener starts the coverage session when the JUnit run starts and stops/publishes the session when the run finishes.
- 
+
 ```xml
 <dependencies>
     <dependency>
@@ -581,7 +569,7 @@ JUnit 4 users should add the JUnit 4 integration dependency and register the run
         <scope>test</scope>
     </dependency>
 </dependencies>
- 
+
 <build>
     <plugins>
         <plugin>
@@ -599,9 +587,9 @@ JUnit 4 users should add the JUnit 4 integration dependency and register the run
     </plugins>
 </build>
 ```
- 
+
 If JUnit 4 tests run through Maven Failsafe, configure the same listener there:
- 
+
 ```xml
 <plugin>
     <groupId>org.apache.maven.plugins</groupId>
