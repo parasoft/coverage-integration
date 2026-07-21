@@ -56,9 +56,9 @@ Use `SeleniumCoverageIntegration#createChromeBrowserCoverage()`, `SeleniumCovera
 
 ```java
 import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration;
-import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.SeleniumBrowserCoverage;
+import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.ChromeCoverageConfig;
 
-try (SeleniumBrowserCoverage coverage = SeleniumCoverageIntegration.createChromeBrowserCoverage()) {
+try (ChromeCoverageConfig coverage = SeleniumCoverageIntegration.createChromeBrowserCoverage()) {
     WebDriver driver = new ChromeDriver(coverage.getChromeOptions());
 
     try {
@@ -73,9 +73,9 @@ try (SeleniumBrowserCoverage coverage = SeleniumCoverageIntegration.createChrome
 For Firefox, use the Firefox coverage handle and options:
 
 ```java
-import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.FirefoxBrowserCoverage;
+import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.FirefoxCoverageConfig;
 
-try (FirefoxBrowserCoverage coverage = SeleniumCoverageIntegration.createFirefoxBrowserCoverage()) {
+try (FirefoxCoverageConfig coverage = SeleniumCoverageIntegration.createFirefoxBrowserCoverage()) {
     WebDriver driver = new FirefoxDriver(coverage.getFirefoxOptions());
 
     try {
@@ -90,9 +90,9 @@ try (FirefoxBrowserCoverage coverage = SeleniumCoverageIntegration.createFirefox
 For Safari, use the Safari coverage handle and options:
 
 ```java
-import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.SafariBrowserCoverage;
+import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.SafariCoverageConfig;
 
-try (SafariBrowserCoverage coverage = SeleniumCoverageIntegration.createSafariBrowserCoverage()) {
+try (SafariCoverageConfig coverage = SeleniumCoverageIntegration.createSafariBrowserCoverage()) {
     WebDriver driver = new SafariDriver(coverage.getSafariOptions());
 
     try {
@@ -314,12 +314,12 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
 import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration;
-import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.SeleniumBrowserCoverage;
+import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.ChromeCoverageConfig;
 
 ChromeOptions options = new ChromeOptions();
 options.addArguments("--headless=new");
 
-try (SeleniumBrowserCoverage coverage =
+try (ChromeCoverageConfig coverage =
         SeleniumCoverageIntegration.createChromeBrowserCoverage(options)) {
     WebDriver driver =
             new ChromeDriver(coverage.getChromeOptions());
@@ -466,9 +466,9 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 
 import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration;
-import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.SeleniumBrowserCoverage;
+import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.ChromeCoverageConfig;
 
-try (SeleniumBrowserCoverage coverage =
+try (ChromeCoverageConfig coverage =
         SeleniumCoverageIntegration.createChromeBrowserCoverage()) {
     WebDriver driver =
             new ChromeDriver(coverage.getChromeOptions());

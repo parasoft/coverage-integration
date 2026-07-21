@@ -65,7 +65,7 @@ public final class SeleniumCoverageIntegration
      * @return browser coverage handle that must be closed after the browser
      *         session ends
      */
-    public static SeleniumBrowserCoverage createChromeBrowserCoverage()
+    public static ChromeCoverageConfig createChromeBrowserCoverage()
     {
         return createChromeBrowserCoverage(new ChromeOptions());
     }
@@ -83,12 +83,12 @@ public final class SeleniumCoverageIntegration
      * @return browser coverage handle that must be closed after the browser
      *         session ends
      */
-    public static SeleniumBrowserCoverage createChromeBrowserCoverage(ChromeOptions options)
+    public static ChromeCoverageConfig createChromeBrowserCoverage(ChromeOptions options)
     {
         ChromeOptions chromeOptions = requireChromeOptions(options);
         ParasoftHeaderInjectingProxy proxy = configureChromeOptions(chromeOptions);
 
-        return new SeleniumBrowserCoverage(chromeOptions, proxy);
+        return new ChromeCoverageConfig(chromeOptions, proxy);
     }
 
     /**
@@ -103,7 +103,7 @@ public final class SeleniumCoverageIntegration
      * @return Edge browser coverage handle that must be closed after the browser
      *         session ends
      */
-    public static EdgeBrowserCoverage createEdgeBrowserCoverage()
+    public static EdgeCoverageConfig createEdgeBrowserCoverage()
     {
         return createEdgeBrowserCoverage(new EdgeOptions());
     }
@@ -121,12 +121,12 @@ public final class SeleniumCoverageIntegration
      * @return Edge browser coverage handle that must be closed after the browser
      *         session ends
      */
-    public static EdgeBrowserCoverage createEdgeBrowserCoverage(EdgeOptions options)
+    public static EdgeCoverageConfig createEdgeBrowserCoverage(EdgeOptions options)
     {
         EdgeOptions edgeOptions = requireEdgeOptions(options);
         ParasoftHeaderInjectingProxy proxy = configureEdgeOptions(edgeOptions);
 
-        return new EdgeBrowserCoverage(edgeOptions, proxy);
+        return new EdgeCoverageConfig(edgeOptions, proxy);
     }
 
     /**
@@ -141,7 +141,7 @@ public final class SeleniumCoverageIntegration
      * @return Firefox browser coverage handle that must be closed after the
      *         browser session ends
      */
-    public static FirefoxBrowserCoverage createFirefoxBrowserCoverage()
+    public static FirefoxCoverageConfig createFirefoxBrowserCoverage()
     {
         return createFirefoxBrowserCoverage(new FirefoxOptions());
     }
@@ -159,12 +159,12 @@ public final class SeleniumCoverageIntegration
      * @return Firefox browser coverage handle that must be closed after the
      *         browser session ends
      */
-    public static FirefoxBrowserCoverage createFirefoxBrowserCoverage(FirefoxOptions options)
+    public static FirefoxCoverageConfig createFirefoxBrowserCoverage(FirefoxOptions options)
     {
         FirefoxOptions firefoxOptions = requireFirefoxOptions(options);
         ParasoftHeaderInjectingProxy proxy = configureFirefoxOptions(firefoxOptions);
 
-        return new FirefoxBrowserCoverage(firefoxOptions, proxy);
+        return new FirefoxCoverageConfig(firefoxOptions, proxy);
     }
 
     /**
@@ -179,7 +179,7 @@ public final class SeleniumCoverageIntegration
      * @return Safari browser coverage handle that must be closed after the
      *         browser session ends
      */
-    public static SafariBrowserCoverage createSafariBrowserCoverage()
+    public static SafariCoverageConfig createSafariBrowserCoverage()
     {
         return createSafariBrowserCoverage(new SafariOptions());
     }
@@ -197,12 +197,12 @@ public final class SeleniumCoverageIntegration
      * @return Safari browser coverage handle that must be closed after the
      *         browser session ends
      */
-    public static SafariBrowserCoverage createSafariBrowserCoverage(SafariOptions options)
+    public static SafariCoverageConfig createSafariBrowserCoverage(SafariOptions options)
     {
         SafariOptions safariOptions = requireSafariOptions(options);
         ParasoftHeaderInjectingProxy proxy = configureSafariOptions(safariOptions);
 
-        return new SafariBrowserCoverage(safariOptions, proxy);
+        return new SafariCoverageConfig(safariOptions, proxy);
     }
 
     /**
@@ -531,13 +531,13 @@ public final class SeleniumCoverageIntegration
     /**
      * Chrome browser coverage state for one Selenium browser session.
      */
-    public static final class SeleniumBrowserCoverage
+    public static final class ChromeCoverageConfig
             implements AutoCloseable
     {
         private final ChromeOptions chromeOptions;
         private final ParasoftHeaderInjectingProxy proxy;
 
-        private SeleniumBrowserCoverage(ChromeOptions chromeOptions, ParasoftHeaderInjectingProxy proxy)
+        private ChromeCoverageConfig(ChromeOptions chromeOptions, ParasoftHeaderInjectingProxy proxy)
         {
             this.chromeOptions = chromeOptions;
             this.proxy = proxy;
@@ -569,13 +569,13 @@ public final class SeleniumCoverageIntegration
     /**
      * Edge browser coverage state for one Selenium browser session.
      */
-    public static final class EdgeBrowserCoverage
+    public static final class EdgeCoverageConfig
             implements AutoCloseable
     {
         private final EdgeOptions edgeOptions;
         private final ParasoftHeaderInjectingProxy proxy;
 
-        private EdgeBrowserCoverage(EdgeOptions edgeOptions, ParasoftHeaderInjectingProxy proxy)
+        private EdgeCoverageConfig(EdgeOptions edgeOptions, ParasoftHeaderInjectingProxy proxy)
         {
             this.edgeOptions = edgeOptions;
             this.proxy = proxy;
@@ -607,13 +607,13 @@ public final class SeleniumCoverageIntegration
     /**
      * Firefox browser coverage state for one Selenium browser session.
      */
-    public static final class FirefoxBrowserCoverage
+    public static final class FirefoxCoverageConfig
             implements AutoCloseable
     {
         private final FirefoxOptions firefoxOptions;
         private final ParasoftHeaderInjectingProxy proxy;
 
-        private FirefoxBrowserCoverage(FirefoxOptions firefoxOptions, ParasoftHeaderInjectingProxy proxy)
+        private FirefoxCoverageConfig(FirefoxOptions firefoxOptions, ParasoftHeaderInjectingProxy proxy)
         {
             this.firefoxOptions = firefoxOptions;
             this.proxy = proxy;
@@ -645,13 +645,13 @@ public final class SeleniumCoverageIntegration
     /**
      * Safari browser coverage state for one Selenium browser session.
      */
-    public static final class SafariBrowserCoverage
+    public static final class SafariCoverageConfig
             implements AutoCloseable
     {
         private final SafariOptions safariOptions;
         private final ParasoftHeaderInjectingProxy proxy;
 
-        private SafariBrowserCoverage(SafariOptions safariOptions, ParasoftHeaderInjectingProxy proxy)
+        private SafariCoverageConfig(SafariOptions safariOptions, ParasoftHeaderInjectingProxy proxy)
         {
             this.safariOptions = safariOptions;
             this.proxy = proxy;

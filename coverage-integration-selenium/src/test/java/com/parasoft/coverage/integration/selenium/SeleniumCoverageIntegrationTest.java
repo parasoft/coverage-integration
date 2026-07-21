@@ -30,10 +30,10 @@ import java.util.Map;
 import com.parasoft.coverage.integration.proxy.ParasoftHeaderInjectingProxy;
 import com.parasoft.coverage.integration.core.CoverageTestContext;
 import com.parasoft.coverage.integration.core.internal.CoverageExecutionContext;
-import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.EdgeBrowserCoverage;
-import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.FirefoxBrowserCoverage;
-import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.SafariBrowserCoverage;
-import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.SeleniumBrowserCoverage;
+import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.EdgeCoverageConfig;
+import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.FirefoxCoverageConfig;
+import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.SafariCoverageConfig;
+import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.ChromeCoverageConfig;
 
 import org.junit.Test;
 import org.openqa.selenium.Proxy;
@@ -52,10 +52,10 @@ public class SeleniumCoverageIntegrationTest
         try {
             CoverageExecutionContext.setCurrent(new CoverageTestContext("parallel-1", "baggage-one"));
 
-            try (SeleniumBrowserCoverage firstBrowser = SeleniumCoverageIntegration.createChromeBrowserCoverage()) {
+            try (ChromeCoverageConfig firstBrowser = SeleniumCoverageIntegration.createChromeBrowserCoverage()) {
                 CoverageExecutionContext.setCurrent(new CoverageTestContext("parallel-2", "baggage-two"));
 
-                try (SeleniumBrowserCoverage secondBrowser = SeleniumCoverageIntegration.createChromeBrowserCoverage()) {
+                try (ChromeCoverageConfig secondBrowser = SeleniumCoverageIntegration.createChromeBrowserCoverage()) {
                     assertNotSame(firstBrowser.getProxy(), secondBrowser.getProxy());
                     assertNotEquals(firstBrowser.getProxy().getPort(), secondBrowser.getProxy().getPort());
                     assertEquals("baggage-one", firstBrowser.getProxy().getBaggageHeader());
@@ -73,7 +73,7 @@ public class SeleniumCoverageIntegrationTest
     {
         ChromeOptions options = new ChromeOptions();
 
-        try (SeleniumBrowserCoverage browserCoverage =
+        try (ChromeCoverageConfig browserCoverage =
                 SeleniumCoverageIntegration.createChromeBrowserCoverage(options)) {
             assertSame(options, browserCoverage.getChromeOptions());
             assertNull(browserCoverage.getProxy().getBaggageHeader());
@@ -138,10 +138,10 @@ public class SeleniumCoverageIntegrationTest
         try {
             CoverageExecutionContext.setCurrent(new CoverageTestContext("parallel-1", "baggage-one"));
 
-            try (EdgeBrowserCoverage firstBrowser = SeleniumCoverageIntegration.createEdgeBrowserCoverage()) {
+            try (EdgeCoverageConfig firstBrowser = SeleniumCoverageIntegration.createEdgeBrowserCoverage()) {
                 CoverageExecutionContext.setCurrent(new CoverageTestContext("parallel-2", "baggage-two"));
 
-                try (EdgeBrowserCoverage secondBrowser = SeleniumCoverageIntegration.createEdgeBrowserCoverage()) {
+                try (EdgeCoverageConfig secondBrowser = SeleniumCoverageIntegration.createEdgeBrowserCoverage()) {
                     assertNotSame(firstBrowser.getProxy(), secondBrowser.getProxy());
                     assertNotEquals(firstBrowser.getProxy().getPort(), secondBrowser.getProxy().getPort());
                     assertEquals("baggage-one", firstBrowser.getProxy().getBaggageHeader());
@@ -159,7 +159,7 @@ public class SeleniumCoverageIntegrationTest
     {
         EdgeOptions options = new EdgeOptions();
 
-        try (EdgeBrowserCoverage browserCoverage =
+        try (EdgeCoverageConfig browserCoverage =
                 SeleniumCoverageIntegration.createEdgeBrowserCoverage(options)) {
             assertSame(options, browserCoverage.getEdgeOptions());
             assertNull(browserCoverage.getProxy().getBaggageHeader());
@@ -175,10 +175,10 @@ public class SeleniumCoverageIntegrationTest
         try {
             CoverageExecutionContext.setCurrent(new CoverageTestContext("parallel-1", "baggage-one"));
 
-            try (FirefoxBrowserCoverage firstBrowser = SeleniumCoverageIntegration.createFirefoxBrowserCoverage()) {
+            try (FirefoxCoverageConfig firstBrowser = SeleniumCoverageIntegration.createFirefoxBrowserCoverage()) {
                 CoverageExecutionContext.setCurrent(new CoverageTestContext("parallel-2", "baggage-two"));
 
-                try (FirefoxBrowserCoverage secondBrowser =
+                try (FirefoxCoverageConfig secondBrowser =
                         SeleniumCoverageIntegration.createFirefoxBrowserCoverage()) {
                     assertNotSame(firstBrowser.getProxy(), secondBrowser.getProxy());
                     assertNotEquals(firstBrowser.getProxy().getPort(), secondBrowser.getProxy().getPort());
@@ -197,7 +197,7 @@ public class SeleniumCoverageIntegrationTest
     {
         FirefoxOptions options = new FirefoxOptions();
 
-        try (FirefoxBrowserCoverage browserCoverage =
+        try (FirefoxCoverageConfig browserCoverage =
                 SeleniumCoverageIntegration.createFirefoxBrowserCoverage(options)) {
             assertSame(options, browserCoverage.getFirefoxOptions());
             assertNull(browserCoverage.getProxy().getBaggageHeader());
@@ -215,10 +215,10 @@ public class SeleniumCoverageIntegrationTest
         try {
             CoverageExecutionContext.setCurrent(new CoverageTestContext("parallel-1", "baggage-one"));
 
-            try (SafariBrowserCoverage firstBrowser = SeleniumCoverageIntegration.createSafariBrowserCoverage()) {
+            try (SafariCoverageConfig firstBrowser = SeleniumCoverageIntegration.createSafariBrowserCoverage()) {
                 CoverageExecutionContext.setCurrent(new CoverageTestContext("parallel-2", "baggage-two"));
 
-                try (SafariBrowserCoverage secondBrowser = SeleniumCoverageIntegration.createSafariBrowserCoverage()) {
+                try (SafariCoverageConfig secondBrowser = SeleniumCoverageIntegration.createSafariBrowserCoverage()) {
                     assertNotSame(firstBrowser.getProxy(), secondBrowser.getProxy());
                     assertNotEquals(firstBrowser.getProxy().getPort(), secondBrowser.getProxy().getPort());
                     assertEquals("baggage-one", firstBrowser.getProxy().getBaggageHeader());
@@ -236,7 +236,7 @@ public class SeleniumCoverageIntegrationTest
     {
         SafariOptions options = new SafariOptions();
 
-        try (SafariBrowserCoverage browserCoverage =
+        try (SafariCoverageConfig browserCoverage =
                 SeleniumCoverageIntegration.createSafariBrowserCoverage(options)) {
             assertSame(options, browserCoverage.getSafariOptions());
             assertNull(browserCoverage.getProxy().getBaggageHeader());
