@@ -1,6 +1,37 @@
 # Coverage Integration
 
-Coverage Integration reports test execution events to Parasoft CTP.
+Coverage Integration reports test execution and coverage to Parasoft Continuous Testing Platform (CTP)
+
+Supported integrations include:
+
+- JUnit 4
+- JUnit 5
+- JUnit 6
+- TestNG
+- Cucumber
+- Selenium
+- Playwright
+
+Most users only need:
+
+1. Add the framework dependency.
+2. Configure `coverage-integration.properties`.
+3. Run tests.
+
+## Table of Contents
+
+- [API](#api)
+- [Coverage Configuration](#coverage-configuration)
+- [Framework Integrations](#framework-integrations)
+  - [JUnit 4](#junit-4)
+  - [JUnit 5/6](#junit-56)
+  - [TestNG](#testng)
+  - [Cucumber](#cucumber)
+- [Browser Integrations](#browser-integrations)
+  - [Selenium](#selenium)
+  - [Playwright](#playwright)
+- [Logging](#logging)
+- [Javadoc](#javadoc)
 
 ## API
 
@@ -10,7 +41,160 @@ Use `CoverageIntegration#getCurrentTestOperatorIdHeader()` to get the `Baggage` 
 
 For rare standalone use cases, such as tests launched from a `main` method, use `CoverageApiClient` from the API module to start and stop sessions and tests directly.
 
-## Playwright
+## Coverage Configuration
+
+Create a coverage-integration.properties file to configure communication with CTP during the testing workflow. This file also provides the information needed to publish test results and coverage after all tests have completed.
+
+```properties
+# URL that points your CTP instance
+parasoft.coverage.integration.ctp.url=http://localhost:8080/em/
+
+# The ID of CTP environment where your coverage agents are configured
+parasoft.coverage.integration.ctp.envId=1
+
+# Session tag used when publishing test and coverage results
+parasoft.coverage.integration.dtp.sessionTag=unit-testing-session
+
+# Authentication username for CTP
+parasoft.coverage.integration.ctp.auth.username=admin
+
+# Password for CTP with support for variable resolution
+parasoft.coverage.integration.ctp.auth.password=${env_var:PASSWORD}
+
+# OAuth bearer token in the case where CTP is setup with OIDC authentication
+parasoft.coverage.integration.ctp.auth.token=<bearer token>
+
+# Enables support for parallel test execution. When enabled, the
+# coverage-integration library isolates coverage data for each test.
+parasoft.coverage.integration.parallel.test.enabled=true
+
+# Identifies the user associated with the coverage session. When running
+# tests in parallel, this value is used to isolate coverage data between
+# concurrent test executions.
+parasoft.coverage.intergration.ctp.userId=tester
+```
+Place this file on your project's classpath, for example in src/test/resources.
+
+## Framework Integrations
+
+### JUnit 4
+
+JUnit 4 users should add the JUnit 4 integration dependency and register the run listener in Maven Surefire. The listener starts the coverage session when the JUnit run starts and stops/publishes the session when the run finishes.
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>com.parasoft</groupId>
+        <artifactId>coverage-integration-junit4</artifactId>
+        <version>${coverage-integration.version}</version>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+                <properties>
+                    <property>
+                        <name>listener</name>
+                        <value>com.parasoft.coverage.integration.junit4.ParasoftJUnit4RunListener</value>
+                    </property>
+                </properties>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+```
+
+If JUnit 4 tests run through Maven Failsafe, configure the same listener there:
+
+```xml
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-failsafe-plugin</artifactId>
+    <configuration>
+        <properties>
+            <property>
+                <name>listener</name>
+                <value>com.parasoft.coverage.integration.junit4.ParasoftJUnit4RunListener</value>
+            </property>
+        </properties>
+    </configuration>
+</plugin>
+```
+
+The JUnit 4 TestWatcher must be added to each test class that should publish test results and coverage.
+```java
+@Rule
+public ParasoftJUnit4Watcher parasoftJUnit4Watcher = new ParasoftJUnit4Watcher();
+```
+
+## JUnit 5/6
+Add the Maven dependency that matches the version of JUnit used by your project. The example below demonstrates the dependency for JUnit 5.
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>com.parasoft</groupId>
+        <artifactId>coverage-integration-junit5</artifactId>
+        <version>${coverage-integration.version}</version>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+Enable JUnit extension auto-detection by setting the following system property when running your unit tests. This allows the extension to be loaded automatically without modifying your existing test code.
+
+-Djunit.jupiter.extensions.autodetection.enabled=true
+
+### TestNG
+
+Add the Maven dependency for the TestNG coverage integration:
+
+```xml
+<dependency>
+    <groupId>com.parasoft</groupId>
+    <artifactId>coverage-integration-testng</artifactId>
+    <version>0.0.1</version>
+    <scope>test</scope>
+</dependency>
+```
+
+After adding the Maven dependency, modify your `testng.xml` file, which is used to organize, configure, and execute TestNG test suites without modifying Java code.
+
+The integration provides two custom listeners:
+
+- [`ParasoftTestNGSuiteListener`](coverage-integration-testng/src/main/java/com/parasoft/coverage/integration/testng/ParasoftTestNGSuiteListener.java)
+- [`ParasoftTestNGTestListener`](coverage-integration-testng/src/main/java/com/parasoft/coverage/integration/testng/ParasoftTestNGTestListener.java)
+
+Add both listeners to your `testng.xml` file as shown below:
+
+```xml
+<suite name="PetClinic Selenium TestNG Suite">
+    <listeners>
+        <listener class-name="com.parasoft.coverage.integration.testng.ParasoftTestNGSuiteListener"/>
+        <listener class-name="com.parasoft.coverage.integration.testng.ParasoftTestNGTestListener"/>
+    </listeners>
+
+    <test name="NavigateIT">
+        <classes>
+            <class name="org.springframework.samples.petclinic.selenium.testng.NavigateIT"/>
+        </classes>
+    </test>
+
+    <test name="PetIT">
+        <classes>
+            <class name="org.springframework.samples.petclinic.selenium.testng.PetIT"/>
+        </classes>
+    </test>
+</suite>
+```
+## Browser Integrations
+
+### Playwright
 
 Add the Playwright integration dependency alongside the Cucumber, JUnit, or TestNG integration dependency used by the test project.
 
@@ -39,7 +223,7 @@ Page page = context.newPage();
 
 The returned options include the current test's `Baggage` header when CTP provides one. In single-user mode, or when no baggage value is available, the returned options contain no additional HTTP headers.
 
-## Selenium
+### Selenium
 
 Add the Selenium integration dependency alongside the Cucumber, JUnit, or TestNG integration dependency used by the test project.
 
@@ -129,34 +313,9 @@ mvn -pl coverage-integration-api -am package
 
 The generated documentation is written to `coverage-integration-api/target/reports/apidocs`. The GitHub Actions workflow in `.github/workflows/publish-javadoc.yml` publishes that Javadoc to GitHub Pages when changes are pushed to `master`, or when the workflow is run manually.
 
-## Coverage properties file
-
-Create a coverage-integration.properties file to configure communication with CTP during the testing workflow. This file also provides the information needed to publish test results and coverage after all tests have completed.
-
-```properties
-# URL that points your CTP instance
-parasoft.coverage.integration.ctp.url=http://localhost:8080/em/
-
-# The ID of CTP environment where your coverage agents are configured
-parasoft.coverage.integration.ctp.envId=1
-
-# Session tag used when publishing test and coverage results
-parasoft.coverage.integration.dtp.sessionTag=unit-testing-session
-
-# Authentication username for CTP
-parasoft.coverage.integration.ctp.auth.username=admin
-
-# Password for CTP with support for variable resolution
-parasoft.coverage.integration.ctp.auth.password=${env_var:PASSWORD}
-
-# OAuth bearer token in the case where CTP is setup with OIDC authentication
-parasoft.coverage.integration.ctp.auth.token=<bearer token>
-```
-Place this file on your project's classpath, for example in src/test/resources.
-
 ## Cucumber
 
-Use `coverage-integration-cucumber` to report Cucumber 7.x scenario results and coverage through Parasoft CTP. After the integration is configured, each Cucumber scenario is reported to DTP using the scenario name as the test case name.
+Use `coverage-integration-cucumber` to report Cucumber 7.x scenario results and coverage through CTP. After the integration is configured, each Cucumber scenario is reported to DTP using the scenario name as the test case name.
 
 Before running the tests, configure a CTP environment with the coverage agents for the application under test.
 
@@ -419,8 +578,6 @@ For example:
 </plugin>
 ```
 
-##### TestNG
-
 Override the Cucumber data provider and enable its parallel mode:
 
 ```java
@@ -536,80 +693,6 @@ String baggageHeader =
 ```
 
 When the returned value is not `null`, send it as the HTTP `Baggage` header on requests to the application under test.
-
-## JUnit 5 and 6
-Add the Maven dependency that matches the version of JUnit used by your project. The example below demonstrates the dependency for JUnit 5.
-
-```xml
-<dependencies>
-    <dependency>
-        <groupId>com.parasoft</groupId>
-        <artifactId>coverage-integration-junit5</artifactId>
-        <version>${coverage-integration.version}</version>
-        <scope>test</scope>
-    </dependency>
-</dependencies>
-```
-
-Enable JUnit extension auto-detection by setting the following system property when running your unit tests. This allows the extension to be loaded automatically without modifying your existing test code.
-
--Djunit.jupiter.extensions.autodetection.enabled=true
-
-
-## JUnit 4
-
-JUnit 4 users should add the JUnit 4 integration dependency and register the run listener in Maven Surefire. The listener starts the coverage session when the JUnit run starts and stops/publishes the session when the run finishes.
-
-```xml
-<dependencies>
-    <dependency>
-        <groupId>com.parasoft</groupId>
-        <artifactId>coverage-integration-junit4</artifactId>
-        <version>${coverage-integration.version}</version>
-        <scope>test</scope>
-    </dependency>
-</dependencies>
-
-<build>
-    <plugins>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-                <properties>
-                    <property>
-                        <name>listener</name>
-                        <value>com.parasoft.coverage.integration.junit4.ParasoftJUnit4RunListener</value>
-                    </property>
-                </properties>
-            </configuration>
-        </plugin>
-    </plugins>
-</build>
-```
-
-If JUnit 4 tests run through Maven Failsafe, configure the same listener there:
-
-```xml
-<plugin>
-    <groupId>org.apache.maven.plugins</groupId>
-    <artifactId>maven-failsafe-plugin</artifactId>
-    <configuration>
-        <properties>
-            <property>
-                <name>listener</name>
-                <value>com.parasoft.coverage.integration.junit4.ParasoftJUnit4RunListener</value>
-            </property>
-        </properties>
-    </configuration>
-</plugin>
-```
-
-The JUnit 4 TestWatcher must be added to each test class that should publish test results and coverage.
-```java
-@Rule
-public ParasoftJUnit4Watcher parasoftJUnit4Watcher = new ParasoftJUnit4Watcher();
-```
 
 ## Logging
 
