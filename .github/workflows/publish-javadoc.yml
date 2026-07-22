@@ -34,8 +34,8 @@ jobs:
           java-version: '17'
           cache: maven
 
-      - name: Build Javadoc
-        run: mvn -B -pl coverage-integration-api -am package
+      - name: Build and test repository
+        run: mvn -B clean verify
 
       - name: Configure Pages with enablement token
         if: ${{ env.PAGES_TOKEN != '' }}
