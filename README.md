@@ -308,7 +308,7 @@ If your tests use Playwright, add the Playwright integration dependency alongsid
 </dependency>
 ```
 
-When creating a new browser context, use `PlaywrightCoverageIntegration#createBrowserContextOptions()`. If you already have an existing `Browser.NewContextOptions` instance, use `PlaywrightCoverageIntegration#updateBrowserContextOptions()` to add the coverage configuration before creating the browser context. reate the browser context using the configured options, then create pages from that context.
+When creating a new browser context, use `PlaywrightCoverageIntegration#createBrowserContextOptions()`. If you already have an existing `Browser.NewContextOptions` instance, use `PlaywrightCoverageIntegration#updateBrowserContextOptions()` to add the coverage configuration before creating the browser context. Create the browser context using the configured options, then create pages from that context.
 
 ```java
 import com.microsoft.playwright.Browser;
