@@ -158,7 +158,7 @@ Add the Maven dependency for the TestNG coverage integration:
 <dependency>
     <groupId>com.parasoft</groupId>
     <artifactId>coverage-integration-testng</artifactId>
-    <version>0.0.1</version>
+    <version>${coverage-integration.version}</version>
     <scope>test</scope>
 </dependency>
 ```
