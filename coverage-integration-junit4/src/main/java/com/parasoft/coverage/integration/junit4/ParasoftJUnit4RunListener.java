@@ -45,14 +45,14 @@ public class ParasoftJUnit4RunListener
     @Override
     public void testRunStarted(Description description)
     {
-        LOGGER.info("JUnit 4 test run started: {}", description);
+        LOGGER.debug("JUnit 4 test run started: {}", description);
         ParasoftJUnit4Lifecycle.startSessionFromRunListener(coverageApiClient);
     }
 
     @Override
     public void testRunFinished(Result result)
     {
-        LOGGER.info("JUnit 4 test run finished: runCount={}, failureCount={}, ignoreCount={}",
+        LOGGER.debug("JUnit 4 test run finished: runCount={}, failureCount={}, ignoreCount={}",
                 result.getRunCount(), result.getFailureCount(), result.getIgnoreCount());
         ParasoftJUnit4Lifecycle.stopSessionFromRunListener(coverageApiClient);
     }

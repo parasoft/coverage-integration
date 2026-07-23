@@ -189,7 +189,7 @@ public final class ParasoftHeaderInjectingProxy
         }
 
         HttpProxyServer server = bootstrap.start();
-        LOGGER.info("Started Parasoft header injecting proxy on {}", server.getListenAddress());
+        LOGGER.debug("Started Parasoft header injecting proxy on {}", server.getListenAddress());
 
         return server;
     }

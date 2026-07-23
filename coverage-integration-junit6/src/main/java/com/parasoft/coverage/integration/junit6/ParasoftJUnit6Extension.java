@@ -96,7 +96,7 @@ public class ParasoftJUnit6Extension implements BeforeEachCallback, TestWatcher
     @Override
     public void testFailed(ExtensionContext context, Throwable cause)
     {
-        LOGGER.info("JUnit 6 test failed: {}", context.getDisplayName());
+        LOGGER.debug("JUnit 6 test failed: {}", context.getDisplayName());
         stopCurrentTest(context, ResultEnum.FAIL, buildFailureMessage(cause));
     }
 

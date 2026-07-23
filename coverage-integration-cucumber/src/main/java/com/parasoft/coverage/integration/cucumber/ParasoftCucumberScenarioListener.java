@@ -114,7 +114,7 @@ public class ParasoftCucumberScenarioListener
         TestExecution execution = new TestExecution(testId, testCaseId);
         currentTest = execution;
 
-        LOGGER.info("Starting Parasoft Cucumber scenario: test={}, testCase={}",
+        LOGGER.debug("Starting Parasoft Cucumber scenario: test={}, testCase={}",
                 testId,
                 testCaseId);
 
@@ -145,7 +145,7 @@ public class ParasoftCucumberScenarioListener
             if (execution != null && !execution.stopped) {
                 execution.stopped = true;
 
-                LOGGER.info(
+                LOGGER.debug(
                         "Stopping Parasoft Cucumber scenario: test={}, testCase={}, result={}",
                         execution.testId,
                         execution.testCaseId,

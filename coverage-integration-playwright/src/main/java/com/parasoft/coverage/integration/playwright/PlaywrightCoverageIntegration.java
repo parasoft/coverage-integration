@@ -67,7 +67,7 @@ public final class PlaywrightCoverageIntegration
     {
         String baggageHeader = CoverageExecutionContext.getCurrentBaggageHeader();
         if (baggageHeader != null && !baggageHeader.isBlank()) {
-            LOGGER.info("Setting Baggage header for Playwright browser context: {}", baggageHeader);
+            LOGGER.debug("Setting Baggage header for Playwright browser context: {}", baggageHeader);
             options.setExtraHTTPHeaders(Map.of(BAGGAGE_HEADER_NAME, baggageHeader));
         }
     }

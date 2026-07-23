@@ -77,7 +77,7 @@ public class ParasoftTestNGTestListener implements ITestListener
     @Override
     public void onTestFailure(ITestResult result)
     {
-        LOGGER.info("TestNG test failed: {}", result.getName());
+        LOGGER.debug("TestNG test failed: {}", result.getName());
         stopCurrentTest(ResultEnum.FAIL, buildFailureMessage(result.getThrowable()));
     }
 
@@ -96,7 +96,7 @@ public class ParasoftTestNGTestListener implements ITestListener
     @Override
     public void onTestFailedWithTimeout(ITestResult result)
     {
-        LOGGER.info("TestNG test failed with timeout: {}", result.getName());
+        LOGGER.debug("TestNG test failed with timeout: {}", result.getName());
         stopCurrentTest(ResultEnum.FAIL, buildFailureMessage(result.getThrowable()));
     }
 

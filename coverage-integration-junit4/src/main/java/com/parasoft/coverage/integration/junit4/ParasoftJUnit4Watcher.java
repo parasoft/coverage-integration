@@ -88,7 +88,7 @@ public class ParasoftJUnit4Watcher extends TestWatcher
     @Override
     protected void failed(Throwable e, Description description)
     {
-        LOGGER.info("JUnit 4 test failed: class={}, method={}", description.getClassName(), description.getMethodName());
+        LOGGER.debug("JUnit 4 test failed: class={}, method={}", description.getClassName(), description.getMethodName());
         stopCurrentTest(ResultEnum.FAIL, buildFailureMessage(e));
     }
 

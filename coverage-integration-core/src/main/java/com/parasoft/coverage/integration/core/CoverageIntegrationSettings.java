@@ -100,7 +100,7 @@ public final class CoverageIntegrationSettings {
         try (InputStream input = classLoader.getResourceAsStream(CONFIG_FILE)) {
             if (input != null) {
                 properties.load(input);
-                LOGGER.info("Loaded coverage integration settings from {}", CONFIG_FILE);
+                LOGGER.debug("Loaded coverage integration settings from {}", CONFIG_FILE);
             } else {
                 LOGGER.warn("Coverage integration settings file {} was not found on the classpath", CONFIG_FILE);
             }

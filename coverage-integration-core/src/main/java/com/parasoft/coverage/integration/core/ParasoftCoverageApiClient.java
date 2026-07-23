@@ -67,7 +67,7 @@ public class ParasoftCoverageApiClient
     {
         OkHttpClient.Builder httpClientBuilder = new OkHttpClient.Builder();
         if (token != null && !token.isBlank()) {
-            LOGGER.info("Configuring Parasoft coverage API client with bearer token authentication");
+            LOGGER.debug("Configuring Parasoft coverage API client with bearer token authentication");
             final String bearerToken = token;
             httpClientBuilder.addInterceptor(chain -> {
                 Request request = chain.request().newBuilder()
@@ -77,13 +77,13 @@ public class ParasoftCoverageApiClient
             });
         } else if (username != null && !username.isBlank()) {
             boolean passwordConfigured = password != null && !password.isEmpty();
-            LOGGER.info(
+            LOGGER.debug(
                     "Configuring Parasoft coverage API client with basic authentication: user='{}', passwordConfigured={}",
                     username,
                     passwordConfigured);
             final String credentials = Credentials.basic(username, password != null ? password : "");
             httpClientBuilder.addInterceptor(chain -> {
-                LOGGER.info(
+                LOGGER.debug(
                         "Sending {} {} with Basic authentication for user '{}' (Authorization value redacted)",
                         chain.request().method(),
                         chain.request().url(),
@@ -107,7 +107,7 @@ public class ParasoftCoverageApiClient
         this.sessionTag = sessionTag;
         this.parallelIdEnabled = parallelIdEnabled;
 
-        LOGGER.info("Configured Parasoft coverage API client for environment {}", environmentId);
+        LOGGER.debug("Configured Parasoft coverage API client for environment {}", environmentId);
     }
 
     private static String toApiBaseUrl(String ctpBaseUrl)
@@ -143,7 +143,7 @@ public class ParasoftCoverageApiClient
     {
         String parallelId = createParallelId();
 
-        LOGGER.info("Starting Parasoft coverage test: test={}, testCase={}", test, testCase);
+        LOGGER.debug("Starting Parasoft coverage test: test={}, testCase={}", test, testCase);
         try {
             AgentTestStartModelV3 testStart = new AgentTestStartModelV3();
             testStart.setUserId(userId);
@@ -155,7 +155,7 @@ public class ParasoftCoverageApiClient
 
             String baggageHeader = status == null ? null : status.getBaggage();
 
-            LOGGER.info("Started Parasoft coverage test: test={}, testCase={}", test, testCase);
+            LOGGER.debug("Started Parasoft coverage test: test={}, testCase={}", test, testCase);
             return new CoverageTestContext(parallelId, baggageHeader);
         }
         catch (ApiException e) {
@@ -168,7 +168,7 @@ public class ParasoftCoverageApiClient
     @Override
     public void stopTest(String test, String testCase, CoverageTestContext testContext, ResultEnum result, String message)
     {
-        LOGGER.info("Stopping Parasoft coverage test: test={}, testCase={}, result={}", test, testCase, result);
+        LOGGER.debug("Stopping Parasoft coverage test: test={}, testCase={}, result={}", test, testCase, result);
         try {
             AgentTestStopModelV3 stop = new AgentTestStopModelV3();
             stop.setUserId(userId);
@@ -179,7 +179,7 @@ public class ParasoftCoverageApiClient
             stop.setMessage(message);
 
             agentsApi.stopTestPost(environmentId, stop);
-            LOGGER.info("Stopped Parasoft coverage test: test={}, testCase={}, result={}", test, testCase, result);
+            LOGGER.debug("Stopped Parasoft coverage test: test={}, testCase={}, result={}", test, testCase, result);
         }
         catch (ApiException e) {
             logApiFailure("stop Parasoft test", e);
