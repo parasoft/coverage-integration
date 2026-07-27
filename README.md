@@ -337,12 +337,11 @@ If your tests use Selenium, add the Selenium integration dependency alongside th
 </dependency>
 ```
 
-Use the browser-specific factory method that matches the Selenium driver being created:
+Chrome, Edge, and Firefox are supported. Use the browser-specific factory method that matches the Selenium driver being created:
 
 - `createChromeBrowserCoverage()`
 - `createEdgeBrowserCoverage()`
 - `createFirefoxBrowserCoverage()`
-- `createSafariBrowserCoverage()`
 
 Create a browser coverage configuration before creating the Selenium driver. The coverage configuration propagates the current test's `Baggage` header to the browser and manages the proxy used for coverage correlation. The proxy is automatically shut down when the coverage configuration is closed.
 
