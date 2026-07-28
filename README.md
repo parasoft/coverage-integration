@@ -281,14 +281,14 @@ Each Cucumber scenario is reported as an individual test case.
 For example:
 
 ```text
-Feature: petclinic.feature
+Feature: PetClinic browser actions
 Scenario: Add a new pet
 ```
 
 is reported to CTP as:
 
 ```text
-test=petclinic.feature#Add a new pet
+test=Feature: PetClinic browser actions#Add a new pet
 testCase=Add a new pet
 ```
 ## Browser Integrations

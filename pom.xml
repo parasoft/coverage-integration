@@ -32,6 +32,8 @@
         <gsonfire.version>1.9.0</gsonfire.version>
         <jakarta.annotation.version>3.0.0</jakarta.annotation.version>
         <cucumber.version>7.34.4</cucumber.version>
+        <gherkin.version>36.1.0</gherkin.version>
+        <messages.version>30.1.0</messages.version>
         <junit4.version>4.13.2</junit4.version>
         <junit5.version>5.14.2</junit5.version>
         <maven.javadoc.version>3.11.2</maven.javadoc.version>
@@ -74,6 +76,16 @@
                 <groupId>io.cucumber</groupId>
                 <artifactId>cucumber-java</artifactId>
                 <version>${cucumber.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.cucumber</groupId>
+                <artifactId>gherkin</artifactId>
+                <version>${gherkin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.cucumber</groupId>
+                <artifactId>messages</artifactId>
+                <version>${messages.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.microsoft.playwright</groupId>

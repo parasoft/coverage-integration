@@ -20,6 +20,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import io.cucumber.java.Status;
 
@@ -33,22 +37,83 @@ import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultE
 public class ParasoftCucumberScenarioListenerTest
 {
     @Test
-    public void buildsTestIdentifierFromFeatureFileAndScenarioName()
+    public void buildsTestIdentifierFromClasspathFeatureNameAndScenarioName() throws Exception
+    {
+        Path classpathRoot = Files.createTempDirectory("cucumber-feature-classpath-");
+        Path featureFile = classpathRoot.resolve("features/coverage-reporting.feature");
+
+        Files.createDirectories(featureFile.getParent());
+        Files.writeString(
+                featureFile,
+                """
+                Feature: Cucumber coverage reporting
+
+                  Scenario: Reports feature name
+                    Given the test is running
+                """);
+
+        ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
+
+        try (URLClassLoader classLoader = new URLClassLoader(new URL[] { classpathRoot.toUri().toURL() }, originalClassLoader)) {
+            Thread.currentThread().setContextClassLoader(classLoader);
+
+            assertEquals(
+                    "Feature: Cucumber coverage reporting#Reports feature name",
+                    ParasoftCucumberScenarioListener.buildTestId(
+                            URI.create(
+                                "classpath:features/coverage-reporting.feature"),
+                                "Reports feature name"));
+        }
+        finally {
+            Thread.currentThread().setContextClassLoader(originalClassLoader);
+
+            Files.deleteIfExists(featureFile);
+            Files.deleteIfExists(featureFile.getParent());
+            Files.deleteIfExists(classpathRoot);
+        }
+    }
+
+    @Test
+    public void resolvesFeatureNameFromFileFeature() throws Exception
+    {
+        Path featureFile = Files.createTempFile("coverage-reporting-", ".feature");
+
+        Files.writeString(
+                featureFile,
+                """
+                Feature: File-based coverage reporting
+
+                  Scenario: Reports feature name
+                    Given the test is running
+                """);
+
+        try {
+            assertEquals(
+                    "Feature: File-based coverage reporting",
+                    ParasoftCucumberScenarioListener.resolveFeatureName(featureFile.toUri()));
+        }
+        finally {
+            Files.deleteIfExists(featureFile);
+        }
+    }
+
+    @Test
+    public void fallsBackToFeatureFileNameWhenFeatureCannotBeRead()
     {
         assertEquals(
-                "petclinic.feature#Navigate to home page",
+                "missing.feature#Reports feature name",
                 ParasoftCucumberScenarioListener.buildTestId(
-                        URI.create("classpath:features/petclinic.feature"),
-                        "Navigate to home page"));
+                        URI.create("classpath:features/missing.feature"),
+                        "Reports feature name"));
     }
 
     @Test
     public void extractsFeatureFileFromFileUri()
     {
         assertEquals(
-                "parabank-demo.feature",
+                "coverage-reporting.feature",
                 ParasoftCucumberScenarioListener.extractFeatureFileName(
-                        URI.create("file:///tmp/features/parabank-demo.feature")));
+                        URI.create("file:///tmp/features/coverage-reporting.feature")));
     }
 
     @Test
@@ -93,8 +158,8 @@ public class ParasoftCucumberScenarioListenerTest
 
         try {
             listener.startScenario(
-                    "petclinic.feature#Navigate to home page",
-                    "Navigate to home page");
+                    "Feature: Cucumber coverage reporting#Reports feature name",
+                    "Reports feature name");
 
             assertEquals(
                     "test-operator-id=automation-user+parallel-123",
@@ -103,16 +168,16 @@ public class ParasoftCucumberScenarioListenerTest
             listener.stopScenario(ResultEnum.PASS, null);
 
             assertEquals(
-                    "petclinic.feature#Navigate to home page",
+                    "Feature: Cucumber coverage reporting#Reports feature name",
                     client.startedTest);
             assertEquals(
-                    "Navigate to home page",
+                    "Reports feature name",
                     client.startedTestCase);
             assertEquals(
-                    "petclinic.feature#Navigate to home page",
+                    "Feature: Cucumber coverage reporting#Reports feature name",
                     client.stoppedTest);
             assertEquals(
-                    "Navigate to home page",
+                    "Reports feature name",
                     client.stoppedTestCase);
             assertEquals(ResultEnum.PASS, client.result);
             assertNull(client.message);
