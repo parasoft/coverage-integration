@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import com.parasoft.coverage.integration.proxy.ParasoftHeaderInjectingProxy;
 import com.parasoft.coverage.integration.core.internal.CoverageExecutionContext;
 
-import org.openqa.selenium.MutableCapabilities;
 import org.openqa.selenium.Proxy;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.chromium.HasCdp;
@@ -64,9 +63,9 @@ public final class SeleniumCoverageIntegration
      * @return browser coverage handle that must be closed after the browser
      *         session ends
      */
-    public static ChromeCoverageConfig createChromeBrowserCoverage()
+    public static ChromeCoverageConfig createChromeProxyConfig()
     {
-        return createChromeBrowserCoverage(new ChromeOptions());
+        return configureProxyBaggageHeader(new ChromeOptions());
     }
 
     /**
@@ -82,9 +81,9 @@ public final class SeleniumCoverageIntegration
      * @return browser coverage handle that must be closed after the browser
      *         session ends
      */
-    public static ChromeCoverageConfig createChromeBrowserCoverage(ChromeOptions options)
+    public static ChromeCoverageConfig configureProxyBaggageHeader(ChromeOptions options)
     {
-        ChromeOptions chromeOptions = requireChromeOptions(options);
+        ChromeOptions chromeOptions = Objects.requireNonNull(options, "options must not be null");
         ParasoftHeaderInjectingProxy proxy = configureChromeOptions(chromeOptions);
 
         return new ChromeCoverageConfig(chromeOptions, proxy);
@@ -102,9 +101,9 @@ public final class SeleniumCoverageIntegration
      * @return Edge browser coverage handle that must be closed after the browser
      *         session ends
      */
-    public static EdgeCoverageConfig createEdgeBrowserCoverage()
+    public static EdgeCoverageConfig createEdgeProxyConfig()
     {
-        return createEdgeBrowserCoverage(new EdgeOptions());
+        return configureProxyBaggageHeader(new EdgeOptions());
     }
 
     /**
@@ -120,9 +119,9 @@ public final class SeleniumCoverageIntegration
      * @return Edge browser coverage handle that must be closed after the browser
      *         session ends
      */
-    public static EdgeCoverageConfig createEdgeBrowserCoverage(EdgeOptions options)
+    public static EdgeCoverageConfig configureProxyBaggageHeader(EdgeOptions options)
     {
-        EdgeOptions edgeOptions = requireEdgeOptions(options);
+        EdgeOptions edgeOptions = Objects.requireNonNull(options, "options must not be null");
         ParasoftHeaderInjectingProxy proxy = configureEdgeOptions(edgeOptions);
 
         return new EdgeCoverageConfig(edgeOptions, proxy);
@@ -140,9 +139,9 @@ public final class SeleniumCoverageIntegration
      * @return Firefox browser coverage handle that must be closed after the
      *         browser session ends
      */
-    public static FirefoxCoverageConfig createFirefoxBrowserCoverage()
+    public static FirefoxCoverageConfig createFirefoxProxyConfig()
     {
-        return createFirefoxBrowserCoverage(new FirefoxOptions());
+        return configureProxyBaggageHeader(new FirefoxOptions());
     }
 
     /**
@@ -158,9 +157,9 @@ public final class SeleniumCoverageIntegration
      * @return Firefox browser coverage handle that must be closed after the
      *         browser session ends
      */
-    public static FirefoxCoverageConfig createFirefoxBrowserCoverage(FirefoxOptions options)
+    public static FirefoxCoverageConfig configureProxyBaggageHeader(FirefoxOptions options)
     {
-        FirefoxOptions firefoxOptions = requireFirefoxOptions(options);
+        FirefoxOptions firefoxOptions = Objects.requireNonNull(options, "options must not be null");
         ParasoftHeaderInjectingProxy proxy = configureFirefoxOptions(firefoxOptions);
 
         return new FirefoxCoverageConfig(firefoxOptions, proxy);
@@ -227,10 +226,8 @@ public final class SeleniumCoverageIntegration
      * @param options Chrome options to configure
      * @return proxy handle that must be closed after the browser session ends
      */
-    public static ParasoftHeaderInjectingProxy configureChromeOptions(MutableCapabilities options)
+    public static ParasoftHeaderInjectingProxy configureChromeOptions(ChromeOptions options)
     {
-        requireChromeOptions(options);
-
         return configureChromeOptions(options, new ParasoftHeaderInjectingProxy());
     }
 
@@ -243,11 +240,9 @@ public final class SeleniumCoverageIntegration
      *        {@code test-operator-id=userId+parallelId}
      * @return proxy handle that must be closed after the browser session ends
      */
-    public static ParasoftHeaderInjectingProxy configureChromeOptions(MutableCapabilities options,
+    public static ParasoftHeaderInjectingProxy configureChromeOptions(ChromeOptions options,
             AtomicReference<String> baggageHeader)
     {
-        requireChromeOptions(options);
-
         return configureChromeOptions(options, new ParasoftHeaderInjectingProxy(baggageHeader));
     }
 
@@ -259,10 +254,10 @@ public final class SeleniumCoverageIntegration
      * @param proxy Parasoft proxy to use
      * @return the supplied proxy
      */
-    public static ParasoftHeaderInjectingProxy configureChromeOptions(MutableCapabilities options,
+    public static ParasoftHeaderInjectingProxy configureChromeOptions(ChromeOptions options,
             ParasoftHeaderInjectingProxy proxy)
     {
-        ChromeOptions chromeOptions = requireChromeOptions(options);
+        ChromeOptions chromeOptions = Objects.requireNonNull(options, "options must not be null");
         ParasoftHeaderInjectingProxy parasoftProxy = Objects.requireNonNull(proxy, "proxy must not be null");
 
         chromeOptions.setProxy(createChromiumSeleniumProxy(parasoftProxy));
@@ -277,10 +272,8 @@ public final class SeleniumCoverageIntegration
      * @param options Edge options to configure
      * @return proxy handle that must be closed after the browser session ends
      */
-    public static ParasoftHeaderInjectingProxy configureEdgeOptions(MutableCapabilities options)
+    public static ParasoftHeaderInjectingProxy configureEdgeOptions(EdgeOptions options)
     {
-        requireEdgeOptions(options);
-
         return configureEdgeOptions(options, new ParasoftHeaderInjectingProxy());
     }
 
@@ -293,11 +286,9 @@ public final class SeleniumCoverageIntegration
      *        {@code test-operator-id=userId+parallelId}
      * @return proxy handle that must be closed after the browser session ends
      */
-    public static ParasoftHeaderInjectingProxy configureEdgeOptions(MutableCapabilities options,
+    public static ParasoftHeaderInjectingProxy configureEdgeOptions(EdgeOptions options,
             AtomicReference<String> baggageHeader)
     {
-        requireEdgeOptions(options);
-
         return configureEdgeOptions(options, new ParasoftHeaderInjectingProxy(baggageHeader));
     }
 
@@ -309,10 +300,10 @@ public final class SeleniumCoverageIntegration
      * @param proxy Parasoft proxy to use
      * @return the supplied proxy
      */
-    public static ParasoftHeaderInjectingProxy configureEdgeOptions(MutableCapabilities options,
+    public static ParasoftHeaderInjectingProxy configureEdgeOptions(EdgeOptions options,
             ParasoftHeaderInjectingProxy proxy)
     {
-        EdgeOptions edgeOptions = requireEdgeOptions(options);
+        EdgeOptions edgeOptions = Objects.requireNonNull(options, "options must not be null");
         ParasoftHeaderInjectingProxy parasoftProxy = Objects.requireNonNull(proxy, "proxy must not be null");
 
         edgeOptions.setProxy(createChromiumSeleniumProxy(parasoftProxy));
@@ -327,10 +318,8 @@ public final class SeleniumCoverageIntegration
      * @param options Firefox options to configure
      * @return proxy handle that must be closed after the browser session ends
      */
-    public static ParasoftHeaderInjectingProxy configureFirefoxOptions(MutableCapabilities options)
+    public static ParasoftHeaderInjectingProxy configureFirefoxOptions(FirefoxOptions options)
     {
-        requireFirefoxOptions(options);
-
         return configureFirefoxOptions(options, new ParasoftHeaderInjectingProxy());
     }
 
@@ -343,11 +332,9 @@ public final class SeleniumCoverageIntegration
      *        {@code test-operator-id=userId+parallelId}
      * @return proxy handle that must be closed after the browser session ends
      */
-    public static ParasoftHeaderInjectingProxy configureFirefoxOptions(MutableCapabilities options,
+    public static ParasoftHeaderInjectingProxy configureFirefoxOptions(FirefoxOptions options,
             AtomicReference<String> baggageHeader)
     {
-        requireFirefoxOptions(options);
-
         return configureFirefoxOptions(options, new ParasoftHeaderInjectingProxy(baggageHeader));
     }
 
@@ -359,49 +346,16 @@ public final class SeleniumCoverageIntegration
      * @param proxy Parasoft proxy to use
      * @return the supplied proxy
      */
-    public static ParasoftHeaderInjectingProxy configureFirefoxOptions(MutableCapabilities options,
+    public static ParasoftHeaderInjectingProxy configureFirefoxOptions(FirefoxOptions options,
             ParasoftHeaderInjectingProxy proxy)
     {
-        FirefoxOptions firefoxOptions = requireFirefoxOptions(options);
+        FirefoxOptions firefoxOptions = Objects.requireNonNull(options, "options must not be null");
         ParasoftHeaderInjectingProxy parasoftProxy = Objects.requireNonNull(proxy, "proxy must not be null");
 
         firefoxOptions.setProxy(createSeleniumProxy(parasoftProxy));
         firefoxOptions.addPreference(FIREFOX_ALLOW_HIJACKING_LOCALHOST, true);
 
         return parasoftProxy;
-    }
-
-    private static ChromeOptions requireChromeOptions(MutableCapabilities options)
-    {
-        Objects.requireNonNull(options, "options must not be null");
-
-        if (options instanceof ChromeOptions chromeOptions) {
-            return chromeOptions;
-        }
-
-        throw new IllegalArgumentException("Expected ChromeOptions but got " + options.getClass().getName());
-    }
-
-    private static EdgeOptions requireEdgeOptions(MutableCapabilities options)
-    {
-        Objects.requireNonNull(options, "options must not be null");
-
-        if (options instanceof EdgeOptions edgeOptions) {
-            return edgeOptions;
-        }
-
-        throw new IllegalArgumentException("Expected EdgeOptions but got " + options.getClass().getName());
-    }
-
-    private static FirefoxOptions requireFirefoxOptions(MutableCapabilities options)
-    {
-        Objects.requireNonNull(options, "options must not be null");
-
-        if (options instanceof FirefoxOptions firefoxOptions) {
-            return firefoxOptions;
-        }
-
-        throw new IllegalArgumentException("Expected FirefoxOptions but got " + options.getClass().getName());
     }
 
     private static Proxy createSeleniumProxy(ParasoftHeaderInjectingProxy parasoftProxy)

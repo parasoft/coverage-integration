@@ -339,9 +339,9 @@ If your tests use Selenium, add the Selenium integration dependency alongside th
 
 Chrome, Edge, and Firefox are supported. Use the browser-specific factory method that matches the Selenium driver being created:
 
-- `createChromeBrowserCoverage()`
-- `createEdgeBrowserCoverage()`
-- `createFirefoxBrowserCoverage()`
+- `createChromeProxyConfig()`
+- `createEdgeProxyConfig()`
+- `createFirefoxProxyConfig()`
 
 Create a browser coverage configuration before creating the Selenium driver. The coverage configuration propagates the current test's `Baggage` header to the browser and manages the proxy used for coverage correlation. The proxy is automatically shut down when the coverage configuration is closed.
 
@@ -350,7 +350,7 @@ Firefox example using the Firefox coverage handle and options:
 ```java
 import com.parasoft.coverage.integration.selenium.SeleniumCoverageIntegration.FirefoxCoverageConfig;
 
-try (FirefoxCoverageConfig coverage = SeleniumCoverageIntegration.createFirefoxBrowserCoverage()) {
+try (FirefoxCoverageConfig coverage = SeleniumCoverageIntegration.createFirefoxProxyConfig()) {
     WebDriver driver = new FirefoxDriver(coverage.getFirefoxOptions());
 
     try {
