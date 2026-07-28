@@ -155,6 +155,16 @@ public class ParasoftCoverageApiClient
 
             String baggageHeader = status == null ? null : status.getBaggage();
 
+            if (parallelIdEnabled && (baggageHeader == null || baggageHeader.isBlank())) {
+                LOGGER.debug(
+                        "CTP startTest response did not include the baggage property: test={}, testCase={}, parallelId={}, responsePresent={}",
+                        test,
+                        testCase,
+                        parallelId,
+                        status != null);
+                LOGGER.warn("This version of CTP does not support parallel tests within a single coverage session.");
+            }
+
             LOGGER.debug("Started Parasoft coverage test: test={}, testCase={}", test, testCase);
             return new CoverageTestContext(parallelId, baggageHeader);
         }
@@ -208,6 +218,7 @@ public class ParasoftCoverageApiClient
     @Override
     public void publishResults(String sessionId, String testConfig, String userId, String toolName)
     {
+        LOGGER.info("Publishing coverage and test results to DTP...");
         try {
             String effectiveUserId = userId != null ? userId : this.userId;
             CoverageUploadRequestModelV3 uploadRequest = new CoverageUploadRequestModelV3();
@@ -232,12 +243,19 @@ public class ParasoftCoverageApiClient
                         coverageApi.getCoverageSessionPublishStatus(environmentId, sessionId, userId);
 
                 if (result != null) {
-                    LOGGER.info(result.getMessage());
-
                     StatusEnum status = result.getStatus();
-                    if (status == StatusEnum.PUBLISHED || status == StatusEnum.ERROR) {
+                    String message = result.getMessage();
+
+                    if (status == StatusEnum.PUBLISHED) {
+                        LOGGER.info(message);
                         return;
                     }
+                    if (status == StatusEnum.ERROR) {
+                        LOGGER.error(message);
+                        return;
+                    }
+
+                    LOGGER.debug(message);
                 }
             }
             catch (ApiException e) {

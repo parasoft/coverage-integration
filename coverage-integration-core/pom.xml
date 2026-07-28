@@ -53,6 +53,13 @@
         </dependency>
 
         <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.5.38</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.wiremock</groupId>
             <artifactId>wiremock</artifactId>
             <version>3.13.2</version>

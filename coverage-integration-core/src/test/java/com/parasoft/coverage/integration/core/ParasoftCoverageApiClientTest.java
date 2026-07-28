@@ -28,6 +28,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -38,8 +39,16 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.time.Duration;
 import java.util.UUID;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
@@ -58,6 +67,15 @@ class ParasoftCoverageApiClientTest
     private static final String TEST_CASE_ID = "addsNumbers";
     private static final String BAGGAGE_HEADER = "test-operator-id=automation-user+parallel-id";
     private static final String FAILURE_MESSAGE = "expected 4 but was 5";
+
+    private static final String MISSING_BAGGAGE_WARNING =
+            "This version of CTP does not support parallel tests within a single coverage session.";
+    private static final String PUBLISH_STATUS_MESSAGE =
+            "Publishing coverage and test results to DTP...";
+    private static final String PUBLISH_SUCCESS_MESSAGE =
+            "Successfully published coverage and results to DTP.";
+    private static final String PUBLISH_FAILURE_MESSAGE =
+            "Failed to publish coverage and results to DTP.";
 
     private static final String SESSION_START_PATH = "/api/v3/environments/42/agents/session/start";
     private static final String TEST_START_PATH = "/api/v3/environments/42/agents/test/start";
@@ -82,10 +100,44 @@ class ParasoftCoverageApiClientTest
             }
             """;
 
+    private static final String TEST_STATUS_WITHOUT_BAGGAGE_RESPONSE = """
+            {
+              "test": "com.example.CalculatorTest",
+              "testCase": "addsNumbers",
+              "session": "coverage-session-123"
+            }
+            """;
+
     @RegisterExtension
     static final WireMockExtension WIREMOCK = WireMockExtension.newInstance()
             .options(wireMockConfig().dynamicPort())
             .build();
+
+    private final Logger clientLogger =
+            (Logger) LoggerFactory.getLogger(ParasoftCoverageApiClient.class);
+    private final ListAppender<ILoggingEvent> logAppender = new ListAppender<>();
+    private Level originalLogLevel;
+    private boolean originalAdditive;
+
+    @BeforeEach
+    void attachLogAppender()
+    {
+        originalLogLevel = clientLogger.getLevel();
+        originalAdditive = clientLogger.isAdditive();
+        clientLogger.setLevel(Level.DEBUG);
+        clientLogger.setAdditive(false);
+        logAppender.start();
+        clientLogger.addAppender(logAppender);
+    }
+
+    @AfterEach
+    void detachLogAppender()
+    {
+        clientLogger.detachAppender(logAppender);
+        logAppender.stop();
+        clientLogger.setLevel(originalLogLevel);
+        clientLogger.setAdditive(originalAdditive);
+    }
 
     @Test
     void executesCoverageLifecycleWithBearerAuthenticationAndParallelId()
@@ -205,6 +257,55 @@ class ParasoftCoverageApiClientTest
                           "workItems": []
                         }
                         """)));
+    }
+
+    @Test
+    void logsDebugAndWarningWhenParallelStartTestResponseDoesNotIncludeBaggage()
+    {
+        WIREMOCK.stubFor(post(urlEqualTo(TEST_START_PATH))
+                .willReturn(okJson(TEST_STATUS_WITHOUT_BAGGAGE_RESPONSE)));
+
+        ParasoftCoverageApiClient client = createClient(
+                true,
+                null,
+                null,
+                BEARER_TOKEN);
+
+        CoverageTestContext testContext = client.startTest(TEST_ID, TEST_CASE_ID);
+
+        assertNotNull(testContext);
+        assertNotNull(testContext.getParallelId());
+        assertNull(testContext.getBaggageHeader());
+        assertEquals(1, countLogEvents(
+                Level.DEBUG,
+                "CTP startTest response did not include the baggage property: test="
+                        + TEST_ID
+                        + ", testCase="
+                        + TEST_CASE_ID
+                        + ", parallelId="
+                        + testContext.getParallelId()
+                        + ", responsePresent=true"));
+        assertEquals(1, countLogEvents(Level.WARN, MISSING_BAGGAGE_WARNING));
+    }
+
+    @Test
+    void doesNotLogMissingBaggageWarningWhenParallelExecutionIsDisabled()
+    {
+        WIREMOCK.stubFor(post(urlEqualTo(TEST_START_PATH))
+                .willReturn(okJson(TEST_STATUS_WITHOUT_BAGGAGE_RESPONSE)));
+
+        ParasoftCoverageApiClient client = createClient(
+                false,
+                null,
+                null,
+                BEARER_TOKEN);
+
+        CoverageTestContext testContext = client.startTest(TEST_ID, TEST_CASE_ID);
+
+        assertNotNull(testContext);
+        assertNull(testContext.getParallelId());
+        assertNull(testContext.getBaggageHeader());
+        assertEquals(0, countLogEvents(Level.WARN, MISSING_BAGGAGE_WARNING));
     }
 
     @Test
@@ -692,6 +793,7 @@ class ParasoftCoverageApiClientTest
         assertFalse(testContext.getParallelId().isBlank());
         assertDoesNotThrow(() -> UUID.fromString(testContext.getParallelId()));
         assertNull(testContext.getBaggageHeader());
+        assertEquals(0, countLogEvents(Level.WARN, MISSING_BAGGAGE_WARNING));
 
         WIREMOCK.verify(1, postRequestedFor(urlEqualTo(TEST_START_PATH))
                 .withHeader("Authorization", equalTo("Bearer " + BEARER_TOKEN))
@@ -883,6 +985,114 @@ class ParasoftCoverageApiClientTest
         awaitRequest(pollRequest, Duration.ofSeconds(10));
 
         WIREMOCK.verify(1, pollRequest);
+    }
+
+    @Test
+    void logsPublishStartAndCompletionOnceWithoutRepeatingIntermediateInfoMessages()
+    {
+        WIREMOCK.stubFor(post(urlPathEqualTo(COVERAGE_PATH))
+                .willReturn(okJson("""
+                        {
+                          "status": "PUBLISHING"
+                        }
+                        """)));
+
+        String scenarioName = "publish status logging";
+        String secondPollState = "second poll";
+        String publishedState = "published";
+
+        WIREMOCK.stubFor(get(urlPathEqualTo(COVERAGE_PATH))
+                .inScenario(scenarioName)
+                .whenScenarioStateIs(STARTED)
+                .willReturn(okJson("""
+                        {
+                          "status": "PUBLISHING",
+                          "message": "Publishing coverage and test results to DTP..."
+                        }
+                        """))
+                .willSetStateTo(secondPollState));
+
+        WIREMOCK.stubFor(get(urlPathEqualTo(COVERAGE_PATH))
+                .inScenario(scenarioName)
+                .whenScenarioStateIs(secondPollState)
+                .willReturn(okJson("""
+                        {
+                          "status": "PUBLISHING",
+                          "message": "Publishing coverage and test results to DTP..."
+                        }
+                        """))
+                .willSetStateTo(publishedState));
+
+        WIREMOCK.stubFor(get(urlPathEqualTo(COVERAGE_PATH))
+                .inScenario(scenarioName)
+                .whenScenarioStateIs(publishedState)
+                .willReturn(okJson("""
+                        {
+                          "status": "PUBLISHED",
+                          "message": "Successfully published coverage and results to DTP.",
+                          "passed": 1,
+                          "failed": 0,
+                          "incomplete": 0
+                        }
+                        """)));
+
+        ParasoftCoverageApiClient client = createClient(
+                false,
+                null,
+                null,
+                BEARER_TOKEN);
+
+        client.publishResults(
+                SESSION_ID,
+                "Unit Test Configuration",
+                USER_ID,
+                "JUnit");
+
+        assertEquals(1, countLogEvents(Level.INFO, PUBLISH_STATUS_MESSAGE));
+        assertEquals(2, countLogEvents(Level.DEBUG, PUBLISH_STATUS_MESSAGE));
+        assertEquals(1, countLogEvents(Level.INFO, PUBLISH_SUCCESS_MESSAGE));
+    }
+
+    @Test
+    void logsPublishFailureOnce()
+    {
+        WIREMOCK.stubFor(post(urlPathEqualTo(COVERAGE_PATH))
+                .willReturn(okJson("""
+                        {
+                          "status": "PUBLISHING"
+                        }
+                        """)));
+
+        WIREMOCK.stubFor(get(urlPathEqualTo(COVERAGE_PATH))
+                .willReturn(okJson("""
+                        {
+                          "status": "ERROR",
+                          "message": "Failed to publish coverage and results to DTP."
+                        }
+                        """)));
+
+        ParasoftCoverageApiClient client = createClient(
+                false,
+                null,
+                null,
+                BEARER_TOKEN);
+
+        client.publishResults(
+                SESSION_ID,
+                "Unit Test Configuration",
+                USER_ID,
+                "JUnit");
+
+        assertEquals(1, countLogEvents(Level.INFO, PUBLISH_STATUS_MESSAGE));
+        assertEquals(1, countLogEvents(Level.ERROR, PUBLISH_FAILURE_MESSAGE));
+    }
+
+    private long countLogEvents(Level level, String message)
+    {
+        return logAppender.list.stream()
+                .filter(event -> event.getLevel() == level)
+                .filter(event -> message.equals(event.getFormattedMessage()))
+                .count();
     }
 
     private static ParasoftCoverageApiClient createClient(
