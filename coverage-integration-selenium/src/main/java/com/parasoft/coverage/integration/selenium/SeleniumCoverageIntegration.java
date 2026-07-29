@@ -69,6 +69,19 @@ public final class SeleniumCoverageIntegration
     }
 
     /**
+     * Creates Chrome options with a proxy bound and advertised on the supplied
+     * hosts. The advertised host must be reachable from the browser.
+     *
+     * @param bindHost host/interface on which the proxy listens
+     * @param advertisedHost host that the browser uses to reach the proxy
+     * @return browser coverage handle that must be closed
+     */
+    public static ChromeCoverageConfig createChromeProxyConfig(String bindHost, String advertisedHost)
+    {
+        return configureProxyBaggageHeader(new ChromeOptions(), bindHost, advertisedHost);
+    }
+
+    /**
      * Configures the supplied Chrome options with a dedicated Parasoft
      * header-injecting proxy for one browser session.
      * <p>
@@ -90,6 +103,23 @@ public final class SeleniumCoverageIntegration
     }
 
     /**
+     * Configures Chrome with a proxy bound and advertised on the supplied hosts.
+     *
+     * @param options Chrome options to configure
+     * @param bindHost host/interface on which the proxy listens
+     * @param advertisedHost host that the browser uses to reach the proxy
+     * @return browser coverage handle that must be closed
+     */
+    public static ChromeCoverageConfig configureProxyBaggageHeader(ChromeOptions options,
+            String bindHost, String advertisedHost)
+    {
+        ChromeOptions chromeOptions = Objects.requireNonNull(options, "options must not be null");
+        ParasoftHeaderInjectingProxy proxy = configureChromeOptions(chromeOptions, bindHost, advertisedHost);
+
+        return new ChromeCoverageConfig(chromeOptions, proxy);
+    }
+
+    /**
      * Creates Edge options configured with a dedicated Parasoft
      * header-injecting proxy for one browser session.
      * <p>
@@ -104,6 +134,19 @@ public final class SeleniumCoverageIntegration
     public static EdgeCoverageConfig createEdgeProxyConfig()
     {
         return configureProxyBaggageHeader(new EdgeOptions());
+    }
+
+    /**
+     * Creates Edge options with a proxy bound and advertised on the supplied
+     * hosts. The advertised host must be reachable from the browser.
+     *
+     * @param bindHost host/interface on which the proxy listens
+     * @param advertisedHost host that the browser uses to reach the proxy
+     * @return browser coverage handle that must be closed
+     */
+    public static EdgeCoverageConfig createEdgeProxyConfig(String bindHost, String advertisedHost)
+    {
+        return configureProxyBaggageHeader(new EdgeOptions(), bindHost, advertisedHost);
     }
 
     /**
@@ -128,6 +171,23 @@ public final class SeleniumCoverageIntegration
     }
 
     /**
+     * Configures Edge with a proxy bound and advertised on the supplied hosts.
+     *
+     * @param options Edge options to configure
+     * @param bindHost host/interface on which the proxy listens
+     * @param advertisedHost host that the browser uses to reach the proxy
+     * @return browser coverage handle that must be closed
+     */
+    public static EdgeCoverageConfig configureProxyBaggageHeader(EdgeOptions options,
+            String bindHost, String advertisedHost)
+    {
+        EdgeOptions edgeOptions = Objects.requireNonNull(options, "options must not be null");
+        ParasoftHeaderInjectingProxy proxy = configureEdgeOptions(edgeOptions, bindHost, advertisedHost);
+
+        return new EdgeCoverageConfig(edgeOptions, proxy);
+    }
+
+    /**
      * Creates Firefox options configured with a dedicated Parasoft
      * header-injecting proxy for one browser session.
      * <p>
@@ -142,6 +202,19 @@ public final class SeleniumCoverageIntegration
     public static FirefoxCoverageConfig createFirefoxProxyConfig()
     {
         return configureProxyBaggageHeader(new FirefoxOptions());
+    }
+
+    /**
+     * Creates Firefox options with a proxy bound and advertised on the supplied
+     * hosts. The advertised host must be reachable from the browser.
+     *
+     * @param bindHost host/interface on which the proxy listens
+     * @param advertisedHost host that the browser uses to reach the proxy
+     * @return browser coverage handle that must be closed
+     */
+    public static FirefoxCoverageConfig createFirefoxProxyConfig(String bindHost, String advertisedHost)
+    {
+        return configureProxyBaggageHeader(new FirefoxOptions(), bindHost, advertisedHost);
     }
 
     /**
@@ -161,6 +234,23 @@ public final class SeleniumCoverageIntegration
     {
         FirefoxOptions firefoxOptions = Objects.requireNonNull(options, "options must not be null");
         ParasoftHeaderInjectingProxy proxy = configureFirefoxOptions(firefoxOptions);
+
+        return new FirefoxCoverageConfig(firefoxOptions, proxy);
+    }
+
+    /**
+     * Configures Firefox with a proxy bound and advertised on the supplied hosts.
+     *
+     * @param options Firefox options to configure
+     * @param bindHost host/interface on which the proxy listens
+     * @param advertisedHost host that the browser uses to reach the proxy
+     * @return browser coverage handle that must be closed
+     */
+    public static FirefoxCoverageConfig configureProxyBaggageHeader(FirefoxOptions options,
+            String bindHost, String advertisedHost)
+    {
+        FirefoxOptions firefoxOptions = Objects.requireNonNull(options, "options must not be null");
+        ParasoftHeaderInjectingProxy proxy = configureFirefoxOptions(firefoxOptions, bindHost, advertisedHost);
 
         return new FirefoxCoverageConfig(firefoxOptions, proxy);
     }
@@ -233,6 +323,22 @@ public final class SeleniumCoverageIntegration
     }
 
     /**
+     * Starts a proxy on the supplied bind host and advertises the host reachable
+     * by the browser.
+     *
+     * @param options Chrome options to configure
+     * @param bindHost host/interface on which the proxy listens
+     * @param advertisedHost host that the browser uses to reach the proxy
+     * @return proxy handle that must be closed
+     */
+    public static ParasoftHeaderInjectingProxy configureChromeOptions(ChromeOptions options,
+            String bindHost, String advertisedHost)
+    {
+        return configureChromeOptions(options, new ParasoftHeaderInjectingProxy(
+                bindHost, advertisedHost, 0, CoverageExecutionContext.getCurrentBaggageHeader()));
+    }
+
+    /**
      * Starts a Parasoft header-injecting proxy using a shared baggage reference
      * and configures the supplied Chrome options to use it.
      *
@@ -276,6 +382,22 @@ public final class SeleniumCoverageIntegration
     public static ParasoftHeaderInjectingProxy configureEdgeOptions(EdgeOptions options)
     {
         return configureEdgeOptions(options, new ParasoftHeaderInjectingProxy());
+    }
+
+    /**
+     * Starts a proxy on the supplied bind host and advertises the host reachable
+     * by the browser.
+     *
+     * @param options Edge options to configure
+     * @param bindHost host/interface on which the proxy listens
+     * @param advertisedHost host that the browser uses to reach the proxy
+     * @return proxy handle that must be closed
+     */
+    public static ParasoftHeaderInjectingProxy configureEdgeOptions(EdgeOptions options,
+            String bindHost, String advertisedHost)
+    {
+        return configureEdgeOptions(options, new ParasoftHeaderInjectingProxy(
+                bindHost, advertisedHost, 0, CoverageExecutionContext.getCurrentBaggageHeader()));
     }
 
     /**
@@ -325,6 +447,22 @@ public final class SeleniumCoverageIntegration
     }
 
     /**
+     * Starts a proxy on the supplied bind host and advertises the host reachable
+     * by the browser.
+     *
+     * @param options Firefox options to configure
+     * @param bindHost host/interface on which the proxy listens
+     * @param advertisedHost host that the browser uses to reach the proxy
+     * @return proxy handle that must be closed
+     */
+    public static ParasoftHeaderInjectingProxy configureFirefoxOptions(FirefoxOptions options,
+            String bindHost, String advertisedHost)
+    {
+        return configureFirefoxOptions(options, new ParasoftHeaderInjectingProxy(
+                bindHost, advertisedHost, 0, CoverageExecutionContext.getCurrentBaggageHeader()));
+    }
+
+    /**
      * Starts a Parasoft header-injecting proxy using a shared baggage reference
      * and configures the supplied Firefox options to use it.
      *
@@ -361,7 +499,7 @@ public final class SeleniumCoverageIntegration
 
     private static Proxy createSeleniumProxy(ParasoftHeaderInjectingProxy parasoftProxy)
     {
-        String proxyAddress = parasoftProxy.getHost() + ":" + parasoftProxy.getPort();
+        String proxyAddress = parasoftProxy.getAdvertisedHost() + ":" + parasoftProxy.getPort();
 
         return new Proxy()
                 .setHttpProxy(proxyAddress)

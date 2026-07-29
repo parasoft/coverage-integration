@@ -364,6 +364,27 @@ try (FirefoxCoverageConfig coverage = SeleniumCoverageIntegration.createFirefoxP
 
 When Selenium tests execute in parallel, create a separate browser coverage configuration for each browser instance. Each configuration starts its own proxy and captures the current test's `Baggage` header.
 
+#### Selenium Grid and containerized browsers
+
+With Selenium Grid, the browser runs on a different host or in a different container from the test process. Configure the proxy with both:
+
+- a **bind host**, which selects the interface where the proxy listens; and
+- an **advertised host**, which is the hostname or IP address placed in the Selenium proxy capability and must be reachable from the browser node.
+
+For example, when the test process listens on all container interfaces and is reachable from browser containers as `tests`:
+
+```java
+try (FirefoxCoverageConfig coverage =
+        SeleniumCoverageIntegration.createFirefoxProxyConfig("0.0.0.0", "tests")) {
+    WebDriver driver = new RemoteWebDriver(gridUrl, coverage.getFirefoxOptions());
+    // test code
+}
+```
+
+The same overloads are available for Chrome and Edge, and for caller-supplied options through `configureProxyBaggageHeader(options, bindHost, advertisedHost)` and `configureChromeOptions`, `configureEdgeOptions`, or `configureFirefoxOptions`. The proxy uses an automatically assigned port, so the Grid node's network and firewall must allow the browser container to connect to that port on the advertised host. Do not advertise `127.0.0.1` or `localhost` unless the browser shares the test process's network namespace.
+
+For custom or future Selenium browser support, construct a `ParasoftHeaderInjectingProxy(bindHost, advertisedHost, port, baggageHeader)`, configure the browser's HTTP and HTTPS proxy to `proxy.getAdvertisedHost() + ":" + proxy.getPort()`, and close the proxy after the browser session. This is also the general approach for browsers that cannot use the Chrome DevTools Protocol.
+
 For Chrome and Edge, the `Baggage` header can be configured using Chrome DevTools Protocol (CDP) instead of the built-in proxy.
 
 ```java

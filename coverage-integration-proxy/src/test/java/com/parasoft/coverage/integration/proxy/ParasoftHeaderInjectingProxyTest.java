@@ -32,6 +32,16 @@ import com.sun.net.httpserver.HttpServer;
 class ParasoftHeaderInjectingProxyTest
 {
     @Test
+    void exposesAdvertisedHostSeparatelyFromBindHost()
+    {
+        try (ParasoftHeaderInjectingProxy coverageProxy = new ParasoftHeaderInjectingProxy(
+                "127.0.0.1", "coverage-proxy.test-network", 0, "baggage")) {
+            assertEquals("127.0.0.1", coverageProxy.getHost());
+            assertEquals("coverage-proxy.test-network", coverageProxy.getAdvertisedHost());
+        }
+    }
+
+    @Test
     void forwardsRequestAndInjectsBaggageHeader() throws IOException
     {
         HttpServer target = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);

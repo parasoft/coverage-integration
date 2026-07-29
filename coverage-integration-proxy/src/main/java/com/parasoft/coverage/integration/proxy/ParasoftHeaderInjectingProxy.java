@@ -51,6 +51,7 @@ public final class ParasoftHeaderInjectingProxy
     private static final Logger LOGGER = LoggerFactory.getLogger(ParasoftHeaderInjectingProxy.class);
 
     private final AtomicReference<String> baggageHeader;
+    private final String advertisedHost;
     private final HttpProxyServer proxy;
 
     /**
@@ -85,8 +86,28 @@ public final class ParasoftHeaderInjectingProxy
      */
     public ParasoftHeaderInjectingProxy(String bindHost, int port, AtomicReference<String> baggageHeader)
     {
+        this(bindHost, bindHost, port, baggageHeader);
+    }
+
+    /**
+     * Starts a proxy on the requested host and port with a shared baggage
+     * reference, advertising a separately configurable host to proxy clients.
+     *
+     * @param bindHost host/interface to bind
+     * @param advertisedHost host that browser clients use to reach the proxy;
+     *        when {@code null} or blank, the actual bound host is used
+     * @param port port to bind, or {@code 0} for an auto-assigned port
+     * @param baggageHeader baggage value to inject, such as
+     *        {@code test-operator-id=userId+parallelId}
+     */
+    public ParasoftHeaderInjectingProxy(String bindHost, String advertisedHost, int port,
+            AtomicReference<String> baggageHeader)
+    {
         this.baggageHeader = Objects.requireNonNull(baggageHeader, "baggageHeader must not be null");
         this.proxy = startProxy(bindHost, port);
+        this.advertisedHost = advertisedHost == null || advertisedHost.isBlank()
+                ? proxy.getListenAddress().getHostString()
+                : advertisedHost;
     }
 
     /**
@@ -100,6 +121,22 @@ public final class ParasoftHeaderInjectingProxy
     public ParasoftHeaderInjectingProxy(String bindHost, int port, String baggageHeader)
     {
         this(bindHost, port, new AtomicReference<>(baggageHeader));
+    }
+
+    /**
+     * Starts a proxy on the requested host and port, advertising a separately
+     * configurable host to proxy clients.
+     *
+     * @param bindHost host/interface to bind
+     * @param advertisedHost host that browser clients use to reach the proxy;
+     *        when {@code null} or blank, the actual bound host is used
+     * @param port port to bind, or {@code 0} for an auto-assigned port
+     * @param baggageHeader baggage value to inject, such as
+     *        {@code test-operator-id=userId+parallelId}
+     */
+    public ParasoftHeaderInjectingProxy(String bindHost, String advertisedHost, int port, String baggageHeader)
+    {
+        this(bindHost, advertisedHost, port, new AtomicReference<>(baggageHeader));
     }
 
     /**
@@ -143,6 +180,14 @@ public final class ParasoftHeaderInjectingProxy
     public String getHost()
     {
         return proxy.getListenAddress().getHostString();
+    }
+
+    /**
+     * @return the host browser clients should use to reach this proxy
+     */
+    public String getAdvertisedHost()
+    {
+        return advertisedHost;
     }
 
     /**

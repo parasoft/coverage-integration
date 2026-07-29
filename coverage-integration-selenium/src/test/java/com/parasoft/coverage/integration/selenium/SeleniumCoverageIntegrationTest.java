@@ -79,6 +79,16 @@ public class SeleniumCoverageIntegrationTest
     }
 
     @Test
+    public void createChromeProxyConfigAdvertisesHostReachableFromGrid()
+    {
+        try (ChromeCoverageConfig coverage = SeleniumCoverageIntegration.createChromeProxyConfig(
+                "127.0.0.1", "host.docker.internal")) {
+            Proxy seleniumProxy = (Proxy) coverage.getChromeOptions().getCapability(CapabilityType.PROXY);
+            assertAdvertisedProxy(coverage.getProxy(), "host.docker.internal", seleniumProxy);
+        }
+    }
+
+    @Test
     public void configureCdpBaggageHeaderUsesCurrentTestBaggage()
     {
         RecordingCdpBrowser browser = new RecordingCdpBrowser();
@@ -168,6 +178,18 @@ public class SeleniumCoverageIntegrationTest
     }
 
     @Test
+    public void configureEdgeOptionsAdvertisesHostReachableFromGrid()
+    {
+        EdgeOptions options = new EdgeOptions();
+
+        try (ParasoftHeaderInjectingProxy proxy = SeleniumCoverageIntegration.configureEdgeOptions(
+                options, "127.0.0.1", "coverage-proxy.grid-network")) {
+            Proxy seleniumProxy = (Proxy) options.getCapability(CapabilityType.PROXY);
+            assertAdvertisedProxy(proxy, "coverage-proxy.grid-network", seleniumProxy);
+        }
+    }
+
+    @Test
     public void createFirefoxProxyConfigCreatesSeparateProxyForEachBrowser()
     {
         try {
@@ -207,6 +229,18 @@ public class SeleniumCoverageIntegrationTest
         }
     }
 
+    @Test
+    public void configureFirefoxCoverageAdvertisesHostReachableFromGrid()
+    {
+        FirefoxOptions options = new FirefoxOptions();
+
+        try (FirefoxCoverageConfig coverage = SeleniumCoverageIntegration.configureProxyBaggageHeader(
+                options, "127.0.0.1", "coverage-proxy.grid-network")) {
+            Proxy seleniumProxy = (Proxy) options.getCapability(CapabilityType.PROXY);
+            assertAdvertisedProxy(coverage.getProxy(), "coverage-proxy.grid-network", seleniumProxy);
+        }
+    }
+
     private static void assertChromiumProxy(ParasoftHeaderInjectingProxy proxy, Proxy seleniumProxy)
     {
         assertProxy(proxy, seleniumProxy);
@@ -231,6 +265,14 @@ public class SeleniumCoverageIntegrationTest
 
         assertEquals(expectedProxyAddress, seleniumProxy.getHttpProxy());
         assertEquals(expectedProxyAddress, seleniumProxy.getSslProxy());
+    }
+
+    private static void assertAdvertisedProxy(ParasoftHeaderInjectingProxy proxy,
+            String advertisedHost, Proxy seleniumProxy)
+    {
+        assertEquals(advertisedHost, proxy.getAdvertisedHost());
+        assertEquals(advertisedHost + ":" + proxy.getPort(), seleniumProxy.getHttpProxy());
+        assertEquals(advertisedHost + ":" + proxy.getPort(), seleniumProxy.getSslProxy());
     }
 
     @SuppressWarnings("unchecked")
