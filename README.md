@@ -35,7 +35,19 @@ Most users only need:
 
 ## API
 
-User tests should compile against the `coverage-integration-api` module and import classes from `com.parasoft.coverage.integration.api`. The core module is internal.
+User tests should compile against the `coverage-integration-api` module and import classes from `com.parasoft.coverage.integration.api`. The `coverage-integration-core` module is for internal use only.
+
+Add the following dependency to your Maven project:
+```xml
+<dependencies>
+    <dependency>
+        <groupId>com.parasoft</groupId>
+        <artifactId>coverage-integration-api</artifactId>
+        <version>${coverage-integration.version}</version>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
 
 Use `CoverageIntegration#getCurrentTestOperatorIdHeader()` to get the `Baggage` header value that contains the current `test-operator-id` returned by the CTP `/test/start` API.
 
