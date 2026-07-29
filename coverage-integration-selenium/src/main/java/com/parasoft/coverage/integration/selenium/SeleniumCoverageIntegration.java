@@ -191,6 +191,7 @@ public final class SeleniumCoverageIntegration
      *
      * @param browser Chrome or Edge driver that supports CDP
      * @param baggageHeader baggage value to inject, such as
+     *        {@code test-operator-id=userId} or
      *        {@code test-operator-id=userId+parallelId}
      */
     public static void configureCdpBaggageHeader(HasCdp browser, String baggageHeader)
