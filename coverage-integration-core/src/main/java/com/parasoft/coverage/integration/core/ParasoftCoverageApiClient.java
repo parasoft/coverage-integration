@@ -45,6 +45,7 @@ public class ParasoftCoverageApiClient
     private static final Logger LOGGER = LoggerFactory.getLogger(ParasoftCoverageApiClient.class);
     private static final long POLL_INTERVAL_MS = 2000L;
     private static final int POLL_MAX_ATTEMPTS = 300;
+    private static final String TEST_OPERATOR_ID_BAGGAGE_PREFIX = "test-operator-id=";
 
     private final AgentsApi agentsApi;
     private final CoverageApi coverageApi;
@@ -154,8 +155,9 @@ public class ParasoftCoverageApiClient
             AgentStatusModelV3 status = agentsApi.startTestPost(environmentId, testStart);
 
             String baggageHeader = status == null ? null : status.getBaggage();
+            boolean baggageMissing = baggageHeader == null || baggageHeader.isBlank();
 
-            if (parallelIdEnabled && (baggageHeader == null || baggageHeader.isBlank())) {
+            if (parallelIdEnabled && baggageMissing) {
                 LOGGER.debug(
                         "CTP startTest response did not include the baggage property: test={}, testCase={}, parallelId={}, responsePresent={}",
                         test,
@@ -163,6 +165,10 @@ public class ParasoftCoverageApiClient
                         parallelId,
                         status != null);
                 LOGGER.warn("This version of CTP does not support parallel tests within a single coverage session.");
+            }
+
+            if (baggageMissing && userId != null && !userId.isBlank()) {
+                baggageHeader = TEST_OPERATOR_ID_BAGGAGE_PREFIX + userId;
             }
 
             LOGGER.debug("Started Parasoft coverage test: test={}, testCase={}", test, testCase);

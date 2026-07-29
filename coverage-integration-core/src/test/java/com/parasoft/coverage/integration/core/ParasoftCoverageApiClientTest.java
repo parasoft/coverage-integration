@@ -66,6 +66,7 @@ class ParasoftCoverageApiClientTest
     private static final String TEST_ID = "com.example.CalculatorTest";
     private static final String TEST_CASE_ID = "addsNumbers";
     private static final String BAGGAGE_HEADER = "test-operator-id=automation-user+parallel-id";
+    private static final String USER_ID_BAGGAGE_HEADER = "test-operator-id=automation-user";
     private static final String FAILURE_MESSAGE = "expected 4 but was 5";
 
     private static final String MISSING_BAGGAGE_WARNING =
@@ -260,7 +261,7 @@ class ParasoftCoverageApiClientTest
     }
 
     @Test
-    void logsDebugAndWarningWhenParallelStartTestResponseDoesNotIncludeBaggage()
+    void usesUserIdBaggageAndLogsWarningWhenParallelStartTestResponseDoesNotIncludeBaggage()
     {
         WIREMOCK.stubFor(post(urlEqualTo(TEST_START_PATH))
                 .willReturn(okJson(TEST_STATUS_WITHOUT_BAGGAGE_RESPONSE)));
@@ -275,7 +276,7 @@ class ParasoftCoverageApiClientTest
 
         assertNotNull(testContext);
         assertNotNull(testContext.getParallelId());
-        assertNull(testContext.getBaggageHeader());
+        assertEquals(USER_ID_BAGGAGE_HEADER, testContext.getBaggageHeader());
         assertEquals(1, countLogEvents(
                 Level.DEBUG,
                 "CTP startTest response did not include the baggage property: test="
@@ -289,7 +290,7 @@ class ParasoftCoverageApiClientTest
     }
 
     @Test
-    void doesNotLogMissingBaggageWarningWhenParallelExecutionIsDisabled()
+    void usesUserIdBaggageWithoutWarningWhenParallelExecutionIsDisabled()
     {
         WIREMOCK.stubFor(post(urlEqualTo(TEST_START_PATH))
                 .willReturn(okJson(TEST_STATUS_WITHOUT_BAGGAGE_RESPONSE)));
@@ -304,8 +305,43 @@ class ParasoftCoverageApiClientTest
 
         assertNotNull(testContext);
         assertNull(testContext.getParallelId());
-        assertNull(testContext.getBaggageHeader());
+        assertEquals(USER_ID_BAGGAGE_HEADER, testContext.getBaggageHeader());
         assertEquals(0, countLogEvents(Level.WARN, MISSING_BAGGAGE_WARNING));
+    }
+
+    @Test
+    void doesNotCreateFallbackBaggageWhenUserIdIsNotConfigured()
+    {
+        WIREMOCK.stubFor(post(urlEqualTo(TEST_START_PATH))
+                .willReturn(okJson(TEST_STATUS_WITHOUT_BAGGAGE_RESPONSE)));
+
+        ParasoftCoverageApiClient client =
+                new ParasoftCoverageApiClient(
+                        "http://localhost:"
+                                + WIREMOCK.getRuntimeInfo().getHttpPort() + "/api/",
+                        ENVIRONMENT_ID,
+                        null,
+                        SESSION_TAG,
+                        false,
+                        null,
+                        null,
+                        BEARER_TOKEN);
+
+        CoverageTestContext testContext = client.startTest(TEST_ID, TEST_CASE_ID);
+
+        assertNotNull(testContext);
+        assertNull(testContext.getParallelId());
+        assertNull(testContext.getBaggageHeader());
+
+        WIREMOCK.verify(1, postRequestedFor(urlEqualTo(TEST_START_PATH))
+                .withHeader("Authorization", equalTo("Bearer " + BEARER_TOKEN))
+                .withRequestBody(equalToJson("""
+                        {
+                          "test": "com.example.CalculatorTest",
+                          "testCase": "addsNumbers",
+                          "workItems": []
+                        }
+                        """)));
     }
 
     @Test
@@ -658,7 +694,7 @@ class ParasoftCoverageApiClientTest
     }
 
     @Test
-    void returnsTestContextWithoutBaggageWhenStartTestResponseHasNoBody()
+    void returnsTestContextWithUserIdBaggageWhenStartTestResponseHasNoBody()
     {
         WIREMOCK.stubFor(post(urlEqualTo(TEST_START_PATH))
                 .willReturn(aResponse()
@@ -678,7 +714,7 @@ class ParasoftCoverageApiClientTest
         assertFalse(testContext.getParallelId().isBlank());
         assertDoesNotThrow(
                 () -> UUID.fromString(testContext.getParallelId()));
-        assertNull(testContext.getBaggageHeader());
+        assertEquals(USER_ID_BAGGAGE_HEADER, testContext.getBaggageHeader());
 
         WIREMOCK.verify(1, postRequestedFor(urlEqualTo(TEST_START_PATH))
                 .withHeader(
