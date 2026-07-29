@@ -90,11 +90,11 @@ public class ParasoftJUnit5Extension implements BeforeEachCallback, TestWatcher
         String methodName = method.getName();
         Class<?>[] paramTypes = method.getParameterTypes();
         if (paramTypes.length == 0) {
-            return null;
+            return context.getRequiredTestMethod().getName();
         }
         String invocationIndex = extractTemplateInvocationIndex(context.getUniqueId());
         if (invocationIndex == null) {
-            return null;
+            return context.getRequiredTestMethod().getName();
         }
         String paramString = Arrays.stream(paramTypes)
                 .map(Class::getSimpleName)
