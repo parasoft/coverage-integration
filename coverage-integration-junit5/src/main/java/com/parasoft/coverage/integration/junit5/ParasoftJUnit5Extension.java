@@ -16,7 +16,9 @@
 
 package com.parasoft.coverage.integration.junit5;
 
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -60,7 +62,7 @@ public class ParasoftJUnit5Extension implements BeforeEachCallback, TestWatcher
     public void beforeEach(ExtensionContext context)
     {
         String testId = getTestId(context);
-        String testCaseId = context.getRequiredTestMethod().getName();
+        String testCaseId = getTestCaseId(context);
         String executionKey = context.getUniqueId();
         TestExecution execution = new TestExecution(testId, testCaseId);
 
@@ -80,6 +82,39 @@ public class ParasoftJUnit5Extension implements BeforeEachCallback, TestWatcher
             CoverageExecutionContext.clearCurrent();
             throw e;
         }
+    }
+
+    private static String getTestCaseId(ExtensionContext context)
+    {
+        java.lang.reflect.Method method = context.getRequiredTestMethod();
+        String methodName = method.getName();
+        Class<?>[] paramTypes = method.getParameterTypes();
+        if (paramTypes.length == 0) {
+            return null;
+        }
+        String invocationIndex = extractTemplateInvocationIndex(context.getUniqueId());
+        if (invocationIndex == null) {
+            return null;
+        }
+        String paramString = Arrays.stream(paramTypes)
+                .map(Class::getSimpleName)
+                .collect(Collectors.joining(", "));
+        return methodName + "(" + paramString + ")[" + invocationIndex + "]";
+    }
+
+    private static String extractTemplateInvocationIndex(String uniqueId)
+    {
+        String prefix = "[test-template-invocation:#";
+        int idx = uniqueId.lastIndexOf(prefix);
+        if (idx < 0) {
+            return null;
+        }
+        int start = idx + prefix.length();
+        int end = uniqueId.indexOf(']', start);
+        if (end <= start) {
+            return null;
+        }
+        return uniqueId.substring(start, end);
     }
 
     private static String getTestId(ExtensionContext context)

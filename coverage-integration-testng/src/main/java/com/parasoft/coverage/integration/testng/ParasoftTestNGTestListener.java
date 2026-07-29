@@ -16,6 +16,9 @@
 
 package com.parasoft.coverage.integration.testng;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.ITestContext;
@@ -49,7 +52,7 @@ public class ParasoftTestNGTestListener implements ITestListener
     public void onTestStart(ITestResult result)
     {
         String testId = getTestId(result);
-        String testCaseId = result.getName();
+        String testCaseId = getTestCaseId(result);
         TestExecution execution = new TestExecution(testId, testCaseId);
         currentExecution.set(execution);
 
@@ -141,6 +144,22 @@ public class ParasoftTestNGTestListener implements ITestListener
                 CoverageExecutionContext.clear(execution.contextThreadId);
             }
         }
+    }
+
+    private static String getTestCaseId(ITestResult result)
+    {
+        Object[] parameters = result.getParameters();
+        if (parameters.length == 0) {
+            return null;
+        }
+        Class<?>[] paramTypes = result.getMethod().getConstructorOrMethod().getMethod().getParameterTypes();
+        // Use only the first parameters.length types to exclude any TestNG-injected params
+        // (e.g. ITestContext) that appear in paramTypes but not in the data-provider values
+        String paramString = Arrays.stream(paramTypes, 0, parameters.length)
+                .map(Class::getSimpleName)
+                .collect(Collectors.joining(", "));
+        int index = result.getMethod().getCurrentInvocationCount() + 1; // TestNG counts invocations starting at 0
+        return result.getName() + "(" + paramString + ")[" + index + "]";
     }
 
     private static String getTestId(ITestResult result)
