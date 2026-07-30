@@ -36,7 +36,9 @@
         <messages.version>30.1.0</messages.version>
         <junit4.version>4.13.2</junit4.version>
         <junit5.version>5.14.2</junit5.version>
-        <maven.javadoc.version>3.11.2</maven.javadoc.version>
+        <maven.javadoc.version>3.12.0</maven.javadoc.version>
+        <maven.reports.version>3.9.0</maven.reports.version>
+        <maven.site.version>3.22.0</maven.site.version>
         <playwright.version>1.61.0</playwright.version>
         <selenium.version>4.44.0</selenium.version>
         <slf4j.version>2.0.17</slf4j.version>
@@ -156,4 +158,74 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>${maven.javadoc.version}</version>
+                    <executions>
+                        <execution>
+                            <id>generate-javadoc</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>javadoc</goal>
+                                <goal>jar</goal>
+                            </goals>
+                            <configuration>
+                                <doclint>all,-missing</doclint>
+                                <sourcepath>${project.basedir}/src/main/java</sourcepath>
+                                <sourceFileIncludes>
+                                    <sourceFileInclude>**/*.java</sourceFileInclude>
+                                </sourceFileIncludes>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-project-info-reports-plugin</artifactId>
+                    <version>${maven.reports.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>${maven.site.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${maven.javadoc.version}</version>
+		<reportSets>
+                    <reportSet>
+                        <id>default</id>
+                        <configuration>
+                            <!-- Specific configuration for the given reports -->
+                        </configuration>
+                        <reports>
+                            <report>javadoc</report>
+                        </reports>
+                    </reportSet>
+                    <reportSet>
+                        <id>aggregate</id>
+                        <inherited>false</inherited>
+                        <configuration>
+                            <skippedModules>coverage-integration-core</skippedModules>
+                        </configuration>
+                        <reports>
+                            <report>aggregate</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+        </plugins>
+    </reporting>
 </project>

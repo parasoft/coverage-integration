@@ -1,4 +1,6 @@
-# Coverage Integration
+# [Parasoft](https://www.parasoft.com) Coverage Integration
+
+[![javadoc](https://img.shields.io/badge/javadoc-1.0.0-brightgreen.svg)](https://parasoft.github.io/coverage-integration/index.html)
 
 Coverage Integration reports test execution and coverage to Parasoft Continuous Testing Platform (CTP)
 
@@ -31,7 +33,6 @@ Most users only need:
   - [Selenium](#selenium)
   - [Playwright](#playwright)
 - [Logging](#logging)
-- [Javadoc](#javadoc)
 
 ## API
 

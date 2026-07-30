@@ -35,7 +35,7 @@ jobs:
           cache: maven
 
       - name: Build and test repository
-        run: mvn -B clean verify
+        run: mvn -B clean verify site
 
       - name: Configure Pages with enablement token
         if: ${{ env.PAGES_TOKEN != '' }}
@@ -51,7 +51,7 @@ jobs:
       - name: Upload Javadoc
         uses: actions/upload-pages-artifact@v5
         with:
-          path: coverage-integration-api/target/reports/apidocs
+          path: target/site/apidocs
 
       - name: Deploy to GitHub Pages
         id: deployment

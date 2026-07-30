@@ -15,6 +15,6 @@
  */
 
 /**
- * Parasoft coverage integration Java API for any situation
+ * Parasoft coverage integration code specific to JUnit 5
  */
-package com.parasoft.coverage.integration.api;
+package com.parasoft.coverage.integration.junit5;
