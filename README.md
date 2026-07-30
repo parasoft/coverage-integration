@@ -49,7 +49,21 @@ Add the following dependency to your Maven project:
 </dependencies>
 ```
 
-Use `CoverageIntegration#getCurrentTestOperatorIdHeader()` to get the `Baggage` header value that contains the current `test-operator-id` returned by the CTP `/test/start` API.
+When coverage agents are running in multi-user mode or tests execute in parallel, browser requests must include the current test's `Baggage` header so that coverage can be correctly associated with the executing test.
+
+The following example retrieves the current `Baggage` header, creates a proxy that injects the header into browser requests, and configures the Chrome driver to use that proxy.
+
+```java
+String baggageHeader = CoverageIntegration.getBaggageHeader();
+if (baggageHeader == null || baggageHeader.isBlank()) {
+    return;
+}
+
+ChromeOptions options = new ChromeOptions();
+ParasoftHeaderInjectingProxy coverageProxy =
+        new ParasoftHeaderInjectingProxy(PROXY_BIND_HOST, 0, baggageHeader);
+SeleniumCoverageIntegration.configureChromeOptions(options, coverageProxy);
+```
 
 For rare standalone use cases, such as tests launched from a `main` method, use `CoverageApiClient` from the API module to start and stop sessions and tests directly.
 
