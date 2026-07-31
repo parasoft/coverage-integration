@@ -9,6 +9,11 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <name>Parasoft Coverage Integration</name>
+    <description>This project is available from Parasoft under the Apache 2.0 license.</description>
+    <url>https://github.com/parasoft/coverage-integration</url>
+    <inceptionYear>2026</inceptionYear>
+
     <modules>
         <module>coverage-integration-core</module>
         <module>coverage-integration-api</module>
@@ -49,6 +54,58 @@
         <testng.version>7.12.0</testng.version>
         <wiremock.version>3.13.2</wiremock.version>
     </properties>
+
+    <developers>
+        <developer>
+            <id>mattloveparasoft</id>
+            <name>Matt Love</name>
+            <email>matt.love@parasoft.com</email>
+            <organization>Parasoft</organization>
+            <organizationUrl>https://www.parasoft.com</organizationUrl>
+        </developer>
+        <developer>
+            <id>humphrey-parasoft</id>
+            <name>Aaron Humphrey</name>
+            <email>aaron.humphrey@parasoft.com</email>
+            <organization>Parasoft</organization>
+            <organizationUrl>https://www.parasoft.com</organizationUrl>
+        </developer>
+        <developer>
+            <id>kailunc</id>
+            <name>Kailun Chen</name>
+            <email>kailun.chen@parasoft.com</email>
+            <organization>Parasoft</organization>
+            <organizationUrl>https://www.parasoft.com</organizationUrl>
+        </developer>
+        <developer>
+            <id>rjnares</id>
+            <name>Roberto Nares</name>
+            <email>roberto.nares@parasoft.com</email>
+            <organization>Parasoft</organization>
+            <organizationUrl>https://www.parasoft.com</organizationUrl>
+        </developer>
+    </developers>
+
+    <organization>
+        <name>Parasoft Corporation</name>
+        <url>https://www.parasoft.com</url>
+    </organization>
+
+    <licenses>
+        <license>
+            <name>Apache-2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>© Copyright 2026 Parasoft Corporation</comments>
+        </license>
+    </licenses>
+
+    <scm>
+        <url>https://github.com/parasoft/coverage-integration</url>
+        <connection>scm:git:https://github.com/parasoft/coverage-integration.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/parasoft/coverage-integration.git</developerConnection>
+        <tag>master</tag>
+    </scm>
 
     <dependencies>
         <dependency>
