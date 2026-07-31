@@ -41,6 +41,7 @@
         <littleproxy.version>2.8.0</littleproxy.version>
         <logback.version>1.6.1</logback.version>
         <maven.enforcer.version>3.6.3</maven.enforcer.version>
+        <maven.jar.version>3.5.1</maven.jar.version>
         <maven.javadoc.version>3.12.0</maven.javadoc.version>
         <maven.reports.version>3.9.0</maven.reports.version>
         <maven.site.version>3.22.0</maven.site.version>
@@ -258,6 +259,18 @@
         </plugins>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>${maven.jar.version}</version>
+                    <configuration>
+                        <archive>
+                            <manifest>
+                                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                                <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                            </manifest>
+                        </archive>
+                    </configuration>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
