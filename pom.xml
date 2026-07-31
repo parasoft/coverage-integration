@@ -22,8 +22,13 @@
         <module>coverage-integration-testng</module>
     </modules>
 
+    <prerequisites>
+        <maven>${maven.version}</maven>
+    </prerequisites>
+
     <properties>
         <maven.compiler.release>17</maven.compiler.release>
+        <maven.version>3.6.3</maven.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <openapi.generator.version>7.14.0</openapi.generator.version>
         <okhttp.version>4.12.0</okhttp.version>
@@ -36,6 +41,7 @@
         <messages.version>30.1.0</messages.version>
         <junit4.version>4.13.2</junit4.version>
         <junit5.version>5.14.2</junit5.version>
+        <maven.enforcer.version>3.6.3</maven.enforcer.version>
         <maven.javadoc.version>3.12.0</maven.javadoc.version>
         <maven.reports.version>3.9.0</maven.reports.version>
         <maven.site.version>3.22.0</maven.site.version>
@@ -45,6 +51,7 @@
         <littleproxy.version>2.7.0</littleproxy.version>
         <testng.version>7.12.0</testng.version>
     </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -160,6 +167,34 @@
     </dependencyManagement>
 
     <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>${maven.enforcer.version}</version>
+                <executions>
+                    <execution>
+                        <id>enforce-versions</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <version>${maven.compiler.release}</version>
+                                </requireJavaVersion>
+                                <!-- versions:display-plugin-updates calculates our minimum
+                                  Maven requirement. This minimum requirement should be updated
+                                  as needed as we update versions of our Maven plugins. -->
+                                <requireMavenVersion>
+                                    <version>${maven.version}</version>
+                                </requireMavenVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
         <pluginManagement>
             <plugins>
                 <plugin>
