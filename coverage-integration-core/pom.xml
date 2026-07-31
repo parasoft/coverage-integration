@@ -15,7 +15,7 @@
 
     <properties>
         <maven.compiler.release>17</maven.compiler.release>
-        <openapi.generator.version>7.14.0</openapi.generator.version>
+        <openapi.generator.version>7.24.0</openapi.generator.version>
     </properties>
 
     <dependencies>
@@ -58,7 +58,6 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.5.38</version>
             <scope>test</scope>
         </dependency>
 
