@@ -19,6 +19,7 @@ package com.parasoft.coverage.integration.api;
 import com.parasoft.coverage.integration.core.CoverageApiClientFactory;
 import com.parasoft.coverage.integration.core.ParasoftCoverageApiClient;
 import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultEnum;
+import com.parasoft.coverage.integration.core.model.CoverageUploadRequestModelV3.AnalysisTypeEnum;
 
 /**
  * User-facing client for directly reporting coverage session and test lifecycle
@@ -137,10 +138,31 @@ public final class CoverageApiClient
      * @param testConfig optional test configuration name
      * @param userId optional user identifier
      * @param toolName optional tool name
+     * @param analysisType the type of test coverage analysis which defaults
+     *        to {@link AnalysisType#FUNCTIONAL_TEST} when {@code null}
      */
-    public void publishResults(String sessionId, String testConfig, String userId, String toolName)
+    public void publishResults(String sessionId, String testConfig, String userId, String toolName, AnalysisType analysisType)
     {
-        delegate.publishResults(sessionId, testConfig, userId, toolName);
+        delegate.publishResults(sessionId, testConfig, userId, toolName, toCoreAnalysisType(analysisType));
+    }
+
+    private static AnalysisTypeEnum toCoreAnalysisType(AnalysisType analysisType)
+    {
+        if (analysisType == null) {
+            return null;
+        }
+        switch (analysisType) {
+            case FUNCTIONAL_TEST:
+                return AnalysisTypeEnum.FUNCTIONAL_TEST;
+            case MANUAL_TEST:
+                return AnalysisTypeEnum.MANUAL_TEST;
+            case UNIT_TEST:
+                return AnalysisTypeEnum.UNIT_TEST;
+            case OTHER:
+                return AnalysisTypeEnum.OTHER;
+            default:
+                throw new IllegalArgumentException("Unsupported analysis type: " + analysisType);
+        }
     }
 
     private static ResultEnum toCoreResult(CoverageTestResult result)

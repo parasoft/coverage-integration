@@ -53,6 +53,7 @@ import ch.qos.logback.core.read.ListAppender;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultEnum;
+import com.parasoft.coverage.integration.core.model.CoverageUploadRequestModelV3.AnalysisTypeEnum;
 
 class ParasoftCoverageApiClientTest
 {
@@ -595,6 +596,7 @@ class ParasoftCoverageApiClientTest
                 SESSION_ID,
                 null,
                 null,
+                null,
                 null));
 
         WIREMOCK.verify(1, postRequestedFor(urlPathEqualTo(COVERAGE_PATH))
@@ -607,7 +609,7 @@ class ParasoftCoverageApiClientTest
                         equalTo("Bearer " + BEARER_TOKEN))
                 .withRequestBody(equalToJson("""
                         {
-                          "analysisType": "UNIT_TEST"
+                          "analysisType": "FUNCTIONAL_TEST"
                         }
                         """)));
 
@@ -630,6 +632,7 @@ class ParasoftCoverageApiClientTest
 
         assertDoesNotThrow(() -> client.publishResults(
                 SESSION_ID,
+                null,
                 null,
                 null,
                 null));
@@ -940,7 +943,8 @@ class ParasoftCoverageApiClientTest
                 SESSION_ID,
                 "Unit Test Configuration",
                 USER_ID,
-                "JUnit"));
+                "JUnit",
+                AnalysisTypeEnum.UNIT_TEST));
 
         WIREMOCK.verify(1, postRequestedFor(urlPathEqualTo(COVERAGE_PATH))
                 .withQueryParam("testConfig", equalTo("Unit Test Configuration"))
@@ -995,7 +999,8 @@ class ParasoftCoverageApiClientTest
                 SESSION_ID,
                 "Unit Test Configuration",
                 USER_ID,
-                "JUnit");
+                "JUnit",
+                AnalysisTypeEnum.UNIT_TEST);
 
         WIREMOCK.verify(1, postRequestedFor(urlPathEqualTo(COVERAGE_PATH))
                 .withQueryParam("testConfig", equalTo("Unit Test Configuration"))
@@ -1082,7 +1087,8 @@ class ParasoftCoverageApiClientTest
                 SESSION_ID,
                 "Unit Test Configuration",
                 USER_ID,
-                "JUnit");
+                "JUnit",
+                AnalysisTypeEnum.UNIT_TEST);
 
         assertEquals(1, countLogEvents(Level.INFO, PUBLISH_STATUS_MESSAGE));
         assertEquals(2, countLogEvents(Level.DEBUG, PUBLISH_STATUS_MESSAGE));
@@ -1117,7 +1123,8 @@ class ParasoftCoverageApiClientTest
                 SESSION_ID,
                 "Unit Test Configuration",
                 USER_ID,
-                "JUnit");
+                "JUnit",
+                AnalysisTypeEnum.UNIT_TEST);
 
         assertEquals(1, countLogEvents(Level.INFO, PUBLISH_STATUS_MESSAGE));
         assertEquals(1, countLogEvents(Level.ERROR, PUBLISH_FAILURE_MESSAGE));

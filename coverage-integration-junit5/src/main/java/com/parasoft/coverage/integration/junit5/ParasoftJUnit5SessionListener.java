@@ -54,7 +54,7 @@ public class ParasoftJUnit5SessionListener implements LauncherSessionListener
         LOGGER.info("JUnit 5 launcher session closed; stopping Parasoft coverage session");
         coverageApiClient.stopSession();
         if (sessionId != null) {
-            coverageApiClient.publishResults(sessionId, null, null, null);
+            coverageApiClient.publishResults(sessionId, null, null, null, null);
         }
     }
 }

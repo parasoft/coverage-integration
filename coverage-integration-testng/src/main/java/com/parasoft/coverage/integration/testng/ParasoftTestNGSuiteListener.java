@@ -54,7 +54,7 @@ public class ParasoftTestNGSuiteListener implements ISuiteListener
         LOGGER.info("TestNG suite finished; stopping Parasoft coverage session");
         coverageApiClient.stopSession();
         if (sessionId != null) {
-            coverageApiClient.publishResults(sessionId, null, null, null);
+            coverageApiClient.publishResults(sessionId, null, null, null, null);
         }
     }
 }

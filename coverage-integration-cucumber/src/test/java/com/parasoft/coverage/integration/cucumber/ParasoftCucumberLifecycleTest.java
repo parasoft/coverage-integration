@@ -26,6 +26,7 @@ import org.junit.Test;
 import com.parasoft.coverage.integration.core.CoverageApiClient;
 import com.parasoft.coverage.integration.core.CoverageTestContext;
 import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultEnum;
+import com.parasoft.coverage.integration.core.model.CoverageUploadRequestModelV3.AnalysisTypeEnum;
 
 public class ParasoftCucumberLifecycleTest
 {
@@ -133,7 +134,8 @@ public class ParasoftCucumberLifecycleTest
                 String sessionId,
                 String testConfig,
                 String userId,
-                String toolName)
+                String toolName,
+                AnalysisTypeEnum analysisType)
         {
             events.add("publishResults:" + sessionId);
         }
