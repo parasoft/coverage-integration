@@ -248,7 +248,7 @@ Add both listeners to your `testng.xml` file as shown below:
 </suite>
 ```
 
-Enable per-test coverage isolation for TestNG parallel test execution (parallel="tests") by setting the following in the coverage-integration.properties file:
+The session listener starts one coverage session for the entire TestNG execution, including suites that use `parallel="classes"` or `parallel="tests"`. Enable per-test coverage isolation for parallel execution by setting the following in the coverage-integration.properties file:
 
 ```properties
 # Note: Requires Parasoft CTP version 2026.2 or later.

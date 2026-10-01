@@ -18,13 +18,12 @@ package com.parasoft.coverage.integration.testng;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.ISuite;
-import org.testng.ISuiteListener;
+import org.testng.IExecutionListener;
 
 import com.parasoft.coverage.integration.core.CoverageApiClient;
 import com.parasoft.coverage.integration.core.CoverageApiClientFactory;
 
-public class ParasoftTestNGSuiteListener implements ISuiteListener
+public class ParasoftTestNGSuiteListener implements IExecutionListener
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParasoftTestNGSuiteListener.class);
 
@@ -42,16 +41,16 @@ public class ParasoftTestNGSuiteListener implements ISuiteListener
     }
 
     @Override
-    public void onStart(ISuite suite)
+    public void onExecutionStart()
     {
-        LOGGER.info("TestNG suite starting; starting Parasoft coverage session");
+        LOGGER.info("TestNG execution starting; starting Parasoft coverage session");
         sessionId = coverageApiClient.startSession();
     }
 
     @Override
-    public void onFinish(ISuite suite)
+    public void onExecutionFinish()
     {
-        LOGGER.info("TestNG suite finished; stopping Parasoft coverage session");
+        LOGGER.info("TestNG execution finished; stopping Parasoft coverage session");
         coverageApiClient.stopSession();
         if (sessionId != null) {
             coverageApiClient.publishResults(sessionId, null, null, null, null);
