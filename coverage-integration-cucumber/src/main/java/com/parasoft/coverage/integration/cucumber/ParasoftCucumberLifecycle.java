@@ -72,6 +72,7 @@ final class ParasoftCucumberLifecycle
                         completedSessionId,
                         null,
                         null,
+                        null,
                         null);
             }
         }

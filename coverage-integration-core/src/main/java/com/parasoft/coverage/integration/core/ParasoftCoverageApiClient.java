@@ -222,14 +222,14 @@ public class ParasoftCoverageApiClient
         return parallelIdEnabled ? UUID.randomUUID().toString() : null;
     }
     @Override
-    public void publishResults(String sessionId, String testConfig, String userId, String toolName)
+    public void publishResults(String sessionId, String testConfig, String userId, String toolName, AnalysisTypeEnum analysisType)
     {
         LOGGER.info("Publishing coverage and test results to DTP...");
         try {
             String effectiveUserId = userId != null ? userId : this.userId;
             CoverageUploadRequestModelV3 uploadRequest = new CoverageUploadRequestModelV3();
             uploadRequest.setSessionTag(sessionTag);
-            uploadRequest.setAnalysisType(AnalysisTypeEnum.UNIT_TEST);
+            uploadRequest.setAnalysisType(analysisType == null ? AnalysisTypeEnum.FUNCTIONAL_TEST : analysisType);
 
             coverageApi.uploadCoverage(environmentId, sessionId, testConfig, effectiveUserId, toolName, true, uploadRequest);
             pollPublishStatus(sessionId);

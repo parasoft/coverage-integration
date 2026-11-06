@@ -15,6 +15,6 @@
  */
 
 /**
- * Public API for Parasoft coverage integration.
+ * Parasoft coverage integration Java API for any situation
  */
 package com.parasoft.coverage.integration.api;

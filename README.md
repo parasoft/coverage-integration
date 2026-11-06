@@ -1,4 +1,6 @@
-# Coverage Integration
+# [Parasoft](https://www.parasoft.com) Coverage Integration
+
+[![javadoc](https://img.shields.io/badge/javadoc-1.0.0-brightgreen.svg)](https://parasoft.github.io/coverage-integration/index.html)
 
 Coverage Integration reports test execution and coverage to Parasoft Continuous Testing Platform (CTP)
 
@@ -28,18 +30,62 @@ Most users only need:
   - [TestNG](#testng)
   - [Cucumber](#cucumber)
 - [Browser Integrations](#browser-integrations)
-  - [Selenium](#selenium)
   - [Playwright](#playwright)
+  - [Selenium](#selenium)
 - [Logging](#logging)
-- [Javadoc](#javadoc)
 
 ## API
 
-User tests should compile against the `coverage-integration-api` module and import classes from `com.parasoft.coverage.integration.api`. The core module is internal.
+User tests should compile against the `coverage-integration-api` module and import classes from `com.parasoft.coverage.integration.api`. The `coverage-integration-core` module is for internal use only.
 
-Use `CoverageIntegration#getCurrentTestOperatorIdHeader()` to get the `Baggage` header value that contains the current `test-operator-id` returned by the CTP `/test/start` API.
+Add the following dependency to your Maven project:
+```xml
+<dependencies>
+    <dependency>
+        <groupId>com.parasoft</groupId>
+        <artifactId>coverage-integration-api</artifactId>
+        <version>${coverage-integration.version}</version>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+When coverage agents are running in multi-user mode or tests execute in parallel, browser requests must include an additional HTTP `Baggage` header so that coverage can be correctly associated with the executing test. See [Browser Integrations](#browser-integrations) for more detail.
+
+The following example retrieves the current `Baggage` header and creates a proxy that injects the header into HTTP requests.
+
+```java
+String baggageHeader = CoverageIntegration.getBaggageHeader();
+if (baggageHeader == null || baggageHeader.isBlank()) {
+    return;
+}
+
+try (ParasoftHeaderInjectingProxy coverageProxy =
+        new ParasoftHeaderInjectingProxy(PROXY_BIND_HOST, 0, baggageHeader)) {
+    String proxyHost = coverageProxy.getHost();
+    int proxyPort = coverageProxy.getPort();
+    // run test HTTP traffic through the coverage proxy
+} // implicitly close the proxy at the end of the try-with-resources block
+```
 
 For rare standalone use cases, such as tests launched from a `main` method, use `CoverageApiClient` from the API module to start and stop sessions and tests directly.
+
+```java
+CoverageApiClient client = CoverageApiClient.createFromSettings();
+String sessionId = client.startSession();
+CoverageTestContext context = client.startTest("ExampleTest", "runsFromMain");
+
+try {
+    // Execute the code under test here. Send context.getCurrentTestOperatorIdHeader()
+    // as HTTP headers when calling an application under test.
+    client.stopTest("ExampleTest", "runsFromMain", context, CoverageTestResult.PASS, null);
+} catch (RuntimeException e) {
+    client.stopTest("ExampleTest", "runsFromMain", context, CoverageTestResult.FAIL, e.getMessage());
+    throw e;
+} finally {
+    client.stopSession();
+}
+```
 
 ## Coverage Configuration
 
@@ -58,20 +104,22 @@ parasoft.coverage.integration.dtp.sessionTag=unit-testing-session
 # Authentication username for CTP
 parasoft.coverage.integration.ctp.auth.username=admin
 
-# Password for CTP with support for variable resolution
-parasoft.coverage.integration.ctp.auth.password=${env_var:PASSWORD}
+# Password for CTP with support for variable resolution such as ${env_var:PASSWORD}
+# It is recommended that passwords be protected by a credentials manager.
+parasoft.coverage.integration.ctp.auth.password=password
 
 # OAuth bearer token in the case where CTP is setup with OIDC authentication
 parasoft.coverage.integration.ctp.auth.token=<bearer token>
 
 # Enables support for parallel test execution. When enabled, the
 # coverage-integration library isolates coverage data for each test.
+# Note: Requires Parasoft CTP version 2026.2 or later.
 parasoft.coverage.integration.parallel.test.enabled=true
 
 # Identifies the user associated with the coverage session. When running
-# tests in parallel, this value is used to isolate coverage data between
-# concurrent test executions.
-parasoft.coverage.intergration.ctp.userId=tester
+# test sessions in parallel, this value is used to isolate coverage data between
+# concurrent test execution sessions.
+parasoft.coverage.integration.ctp.userId=tester
 ```
 Place this file on your project's classpath, for example in src/test/resources.
 
@@ -150,6 +198,13 @@ Enable JUnit extension auto-detection by setting the following system property w
 
 -Djunit.jupiter.extensions.autodetection.enabled=true
 
+Enable per-test coverage isolation for JUnit parallel test execution (-Djunit.jupiter.execution.parallel.enabled=true) by setting the following in the coverage-integration.properties file:
+
+```properties
+# Note: Requires Parasoft CTP version 2026.2 or later.
+parasoft.coverage.integration.parallel.test.enabled=true
+```
+
 ### TestNG
 
 Add the Maven dependency for the TestNG coverage integration:
@@ -191,6 +246,13 @@ Add both listeners to your `testng.xml` file as shown below:
         </classes>
     </test>
 </suite>
+```
+
+The session listener starts one coverage session for the entire TestNG execution, including suites that use `parallel="classes"` or `parallel="tests"`. Enable per-test coverage isolation for parallel execution by setting the following in the coverage-integration.properties file:
+
+```properties
+# Note: Requires Parasoft CTP version 2026.2 or later.
+parasoft.coverage.integration.parallel.test.enabled=true
 ```
 
 ### Cucumber
@@ -398,13 +460,16 @@ To set explicit headers instead, use `configureCdpHeaders(driver, headers)`.
 
 Call `configureCdpBaggageHeader` separately for each Chrome or Edge browser session used by parallel tests. The proxy-based approach works with all supported browsers. CDP is an alternative available only for Chrome and Edge.
 
+> [!NOTE]
+> Cross-container Selenium grid coverage isolation in multi-user or parallel testing takes extra care to configure. The `SeleniumCoverageIntegration.configureCdpBaggageHeader(driver)` approach above is recommended for Google Chrome and Microsoft Edge.  However, the Parasoft coverage proxy used with Firefox only binds to the loopback address `127.0.0.1` by default. Use the `ParasoftHeaderInjectingProxy` constructor from the API to bind the proxy to a different host.
+
 ## Logging
 
 This project uses SLF4J and includes only the `slf4j-api` dependency. It does not provide or configure a logging backend, so debug logging is not shown by default. Applications that use this library control logging through their own SLF4J backend, such as Logback, Log4j 2, JUL, or `slf4j-simple`.
 
 The project logs under the `com.parasoft.coverage.integration` package.
 
-## Enable Debug Logging
+### Enable Debug Logging
 
 Configure your application's logging backend to set `com.parasoft.coverage.integration` to `DEBUG`.
 

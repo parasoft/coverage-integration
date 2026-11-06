@@ -60,7 +60,7 @@ final class ParasoftJUnit4Lifecycle
             LOGGER.info("Stopping Parasoft coverage session from JUnit 4 run listener");
             coverageApiClient.stopSession();
             if (sessionId != null) {
-                coverageApiClient.publishResults(sessionId, null, null, null);
+                coverageApiClient.publishResults(sessionId, null, null, null, null);
             }
         } else {
             LOGGER.debug("Skipping JUnit 4 run listener session stop because owner={} stopped={}",
@@ -92,7 +92,7 @@ final class ParasoftJUnit4Lifecycle
             LOGGER.info("Stopping Parasoft coverage session from JUnit 4 watcher fallback");
             coverageApiClient.stopSession();
             if (sessionId != null) {
-                coverageApiClient.publishResults(sessionId, null, null, null);
+                coverageApiClient.publishResults(sessionId, null, null, null, null);
             }
         }
     }

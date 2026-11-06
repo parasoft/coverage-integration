@@ -17,6 +17,7 @@
 package com.parasoft.coverage.integration.core;
 
 import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultEnum;
+import com.parasoft.coverage.integration.core.model.CoverageUploadRequestModelV3.AnalysisTypeEnum;
 
 public interface CoverageApiClient
 {
@@ -28,5 +29,5 @@ public interface CoverageApiClient
 
     void stopSession();
 
-    void publishResults(String sessionId, String testConfig, String userId, String toolName);
+    void publishResults(String sessionId, String testConfig, String userId, String toolName, AnalysisTypeEnum analysisType);
 }

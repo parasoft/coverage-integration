@@ -33,6 +33,7 @@ import com.parasoft.coverage.integration.core.CoverageApiClient;
 import com.parasoft.coverage.integration.core.CoverageTestContext;
 import com.parasoft.coverage.integration.core.internal.CoverageExecutionContext;
 import com.parasoft.coverage.integration.core.model.AgentTestStopModelV3.ResultEnum;
+import com.parasoft.coverage.integration.core.model.CoverageUploadRequestModelV3.AnalysisTypeEnum;
 
 public class ParasoftCucumberScenarioListenerTest
 {
@@ -240,7 +241,8 @@ public class ParasoftCucumberScenarioListenerTest
                 String sessionId,
                 String testConfig,
                 String userId,
-                String toolName)
+                String toolName,
+                AnalysisTypeEnum analysisType)
         {
             throw new UnsupportedOperationException();
         }
