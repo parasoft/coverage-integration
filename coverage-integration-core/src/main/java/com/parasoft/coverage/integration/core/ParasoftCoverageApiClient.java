@@ -53,6 +53,7 @@ public class ParasoftCoverageApiClient
     private final String userId;
     private final String sessionTag;
     private final boolean parallelIdEnabled;
+    private final boolean publishEnabled;
 
     public ParasoftCoverageApiClient(String ctpBaseUrl, Long environmentId, String userId, String sessionTag)
     {
@@ -65,6 +66,11 @@ public class ParasoftCoverageApiClient
     }
 
     public ParasoftCoverageApiClient(String ctpBaseUrl, Long environmentId, String userId, String sessionTag, boolean parallelIdEnabled, String username, String password, String token)
+    {
+        this(ctpBaseUrl, environmentId, userId, sessionTag, parallelIdEnabled, username, password, token, true);
+    }
+
+    public ParasoftCoverageApiClient(String ctpBaseUrl, Long environmentId, String userId, String sessionTag, boolean parallelIdEnabled, String username, String password, String token, boolean publishEnabled)
     {
         OkHttpClient.Builder httpClientBuilder = new OkHttpClient.Builder();
         if (token != null && !token.isBlank()) {
@@ -107,6 +113,7 @@ public class ParasoftCoverageApiClient
         this.userId = userId;
         this.sessionTag = sessionTag;
         this.parallelIdEnabled = parallelIdEnabled;
+        this.publishEnabled = publishEnabled;
 
         LOGGER.debug("Configured Parasoft coverage API client for environment {}", environmentId);
     }
@@ -224,6 +231,10 @@ public class ParasoftCoverageApiClient
     @Override
     public void publishResults(String sessionId, String testConfig, String userId, String toolName, AnalysisTypeEnum analysisType)
     {
+        if (!publishEnabled) {
+            LOGGER.info("Publishing coverage and test results to DTP is disabled; skipping publication.");
+            return;
+        }
         LOGGER.info("Publishing coverage and test results to DTP...");
         try {
             String effectiveUserId = userId != null ? userId : this.userId;

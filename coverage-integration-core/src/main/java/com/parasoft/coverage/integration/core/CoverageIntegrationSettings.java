@@ -69,6 +69,11 @@ public final class CoverageIntegrationSettings {
         return getOptional("parasoft.coverage.integration.dtp.sessionTag");
     }
 
+    public boolean isPublishEnabled() {
+        String value = getOptional("parasoft.coverage.integration.dtp.publish");
+        return value == null || Boolean.parseBoolean(value);
+    }
+
     private String getRequired(String key) {
         String value = getOptional(key);
         if (value == null || value.isBlank()) {

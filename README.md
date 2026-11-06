@@ -101,6 +101,10 @@ parasoft.coverage.integration.ctp.envId=1
 # Session tag used when publishing test and coverage results
 parasoft.coverage.integration.dtp.sessionTag=unit-testing-session
 
+# Publish coverage and test results to DTP (optional, defaults to true).
+# Set to false for configuration test runs that should only communicate with CTP.
+parasoft.coverage.integration.dtp.publish=true
+
 # Authentication username for CTP
 parasoft.coverage.integration.ctp.auth.username=admin
 

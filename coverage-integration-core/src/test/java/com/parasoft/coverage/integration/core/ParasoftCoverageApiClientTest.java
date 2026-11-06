@@ -37,6 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
@@ -139,6 +141,56 @@ class ParasoftCoverageApiClientTest
         logAppender.stop();
         clientLogger.setLevel(originalLogLevel);
         clientLogger.setAdditive(originalAdditive);
+    }
+
+    @Test
+    void disablesPublishingFromSettingsWhileKeepingCtpLifecycleActive()
+    {
+        Map<String, String> settings = Map.of(
+                "parasoft.coverage.integration.ctp.url", WIREMOCK.getRuntimeInfo().getHttpBaseUrl() + "/api/",
+                "parasoft.coverage.integration.ctp.envId", Long.toString(ENVIRONMENT_ID),
+                "parasoft.coverage.integration.dtp.publish", "false");
+        Map<String, String> originalSettings = new HashMap<>();
+        settings.forEach((key, value) -> originalSettings.put(key, System.getProperty(key)));
+        try {
+            System.clearProperty("parasoft.coverage.integration.dtp.publish");
+            assertEquals(true, new CoverageIntegrationSettings().isPublishEnabled());
+            System.setProperty("parasoft.coverage.integration.dtp.publish", "true");
+            assertEquals(true, new CoverageIntegrationSettings().isPublishEnabled());
+            settings.forEach(System::setProperty);
+            assertFalse(new CoverageIntegrationSettings().isPublishEnabled());
+
+            WIREMOCK.stubFor(post(urlEqualTo(SESSION_START_PATH))
+                    .willReturn(okJson(SESSION_STATUS_RESPONSE)));
+            WIREMOCK.stubFor(post(urlEqualTo(TEST_START_PATH))
+                    .willReturn(okJson(TEST_STATUS_RESPONSE)));
+            WIREMOCK.stubFor(post(urlEqualTo(TEST_STOP_PATH))
+                    .willReturn(okJson(SESSION_STATUS_RESPONSE)));
+            WIREMOCK.stubFor(post(urlEqualTo(SESSION_STOP_PATH))
+                    .willReturn(okJson(SESSION_STATUS_RESPONSE)));
+
+            CoverageApiClient client = CoverageApiClientFactory.createFromSettings();
+            String sessionId = client.startSession();
+            CoverageTestContext context = client.startTest(TEST_ID, TEST_CASE_ID);
+            client.stopTest(TEST_ID, TEST_CASE_ID, context, ResultEnum.PASS, null);
+            client.stopSession();
+            client.publishResults(sessionId, null, null, null, null);
+
+            WIREMOCK.verify(1, postRequestedFor(urlEqualTo(SESSION_START_PATH)));
+            WIREMOCK.verify(1, postRequestedFor(urlEqualTo(TEST_START_PATH)));
+            WIREMOCK.verify(1, postRequestedFor(urlEqualTo(TEST_STOP_PATH)));
+            WIREMOCK.verify(1, postRequestedFor(urlEqualTo(SESSION_STOP_PATH)));
+            assertEquals(4, WIREMOCK.getAllServeEvents().size());
+            assertEquals(0, countLogEvents(Level.INFO, PUBLISH_STATUS_MESSAGE));
+        } finally {
+            originalSettings.forEach((key, value) -> {
+                if (value == null) {
+                    System.clearProperty(key);
+                } else {
+                    System.setProperty(key, value);
+                }
+            });
+        }
     }
 
     @Test

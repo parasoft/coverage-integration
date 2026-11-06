@@ -31,6 +31,6 @@ public final class CoverageApiClientFactory
     {
         LOGGER.debug("Creating coverage API client from configured settings");
         CoverageIntegrationSettings settings = new CoverageIntegrationSettings();
-        return new ParasoftCoverageApiClient(settings.getCtpUrl(), settings.getEnvironmentId(), settings.getUserId(), settings.getSessionTag(), settings.isParallelIdEnabled(), settings.getUsername(), settings.getPassword(), settings.getToken());
+        return new ParasoftCoverageApiClient(settings.getCtpUrl(), settings.getEnvironmentId(), settings.getUserId(), settings.getSessionTag(), settings.isParallelIdEnabled(), settings.getUsername(), settings.getPassword(), settings.getToken(), settings.isPublishEnabled());
     }
 }
