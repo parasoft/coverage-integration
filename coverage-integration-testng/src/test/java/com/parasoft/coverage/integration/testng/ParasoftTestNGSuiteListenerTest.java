@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.testng.TestNG;
+import org.testng.TestListenerAdapter;
 import org.testng.annotations.Test;
 import org.testng.xml.XmlClass;
 import org.testng.xml.XmlSuite;
@@ -25,16 +26,19 @@ public class ParasoftTestNGSuiteListenerTest
     public void startsOneSessionForParallelClassesAcrossSuites()
     {
         EVENTS.clear();
-        XmlSuite firstSuite = suite("first", FirstClass.class, SecondClass.class);
-        XmlSuite secondSuite = suite("second", ThirdClass.class);
+        XmlSuite firstSuite = suite("first", SuiteFixtures.FirstClass.class, SuiteFixtures.SecondClass.class);
+        XmlSuite secondSuite = suite("second", SuiteFixtures.ThirdClass.class);
 
         TestNG runner = new TestNG();
+        TestListenerAdapter results = new TestListenerAdapter();
+        runner.addListener(results);
         runner.setUseDefaultListeners(false);
         runner.setVerbose(0);
         runner.setXmlSuites(List.of(firstSuite, secondSuite));
         runner.run();
 
         assertFalse(runner.hasFailure());
+        assertEquals(results.getPassedTests().size(), 3);
         assertEquals(EVENTS, List.of("start", "stop", "publish:session-1"));
     }
 
@@ -56,30 +60,6 @@ public class ParasoftTestNGSuiteListenerTest
         public RecordingListener()
         {
             super(new RecordingClient());
-        }
-    }
-
-    public static class FirstClass
-    {
-        @Test
-        public void runs()
-        {
-        }
-    }
-
-    public static class SecondClass
-    {
-        @Test
-        public void runs()
-        {
-        }
-    }
-
-    public static class ThirdClass
-    {
-        @Test
-        public void runs()
-        {
         }
     }
 
